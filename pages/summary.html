@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>KrazyPlace — Summary</title>
+  <!-- Utilise la version 'latest' de Pico via unpkg : léger et sans build -->
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <style>
+    /* Petites personnalisations sans alourdir */
+    .hero {
+      padding: 4rem 1rem;
+      text-align: center;
+    }
+    .container-narrow {
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--surface-3);
+    }
+  </style>
+</head>
+<body>
+  <header class="container container-narrow">
+    <nav>
+      <ul>
+        <li class="logo"><a href="/KrazyPlace">KrazyPlace</a></li>
+        <li><a href="/KrazyPlace/storyboard.html">Storyboard</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container container-narrow">
+    <section class="hero">
+      <hgroup>
+        <h1>KrazyPlace — Summary</h1>
+        <p class="lead"><a href="/KrazyPlace/storyboard.html">Retour</a></p>
+      </hgroup>
+    </section>
+
+    <section>
+      <p>
+        A : Maitre en art martial, bloqué par ses bases mal construites, utilise un artefact pour revenir au moment de sa naissance en conservant ses connaissances et souvenirs.
+        B : Grand maitre en arts martiaux mort depuis plusieurs milliers d'années, réincarné dans un nouveau né simultanément au retour de A. La réincarnation s'est produite à cause de l'utilisation de l'artefact par A, ce qui signifie que dans la vie qu'a vécu A initialement, la réincarnation de B n'avait pas eu lieu, ce qui va conduire à des modifications des évènements que A avait déjà vécu.
+      </p>
+    </section>
+
+    <footer>
+      <p>© KrazyPlace</p>
+    </footer>
+  </main>
+
+  <!-- Petit script facultatif : bascule de thème (local) -->
+  <script>
+    // bascule simple clair/sombre (stocké en localStorage)
+    (function(){
+      const key = 'pico-theme-dark';
+      if(localStorage.getItem(key) === '1') document.documentElement.style.colorScheme = 'dark';
+      // Exposition possible via console : localStorage.setItem('pico-theme-dark','1')
+    })();
+  </script>
+</body>
+</html>
