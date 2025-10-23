@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Page de démonstration — Pico CSS</title>
+  <!-- Utilise la version 'latest' de Pico via unpkg : léger et sans build -->
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <style>
+    /* Petites personnalisations sans alourdir */
+    .hero {
+      padding: 4rem 1rem;
+      text-align: center;
+    }
+    .container-narrow {
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--surface-3);
+    }
+  </style>
+</head>
+<body>
+  <header class="container container-narrow">
+    <nav>
+      <ul>
+        <li class="logo"><a href="#">MonSite</a></li>
+        <li><a href="#features">Fonctionnalités</a></li>
+        <li><a href="#examples">Exemples</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container container-narrow">
+    <section class="hero">
+      <hgroup>
+        <h1>Pico CSS — Page de démonstration</h1>
+        <p class="lead">Un squelette HTML léger et propre utilisant Pico : design lisible, rapide et minimal.</p>
+      </hgroup>
+      <p>
+        <a href="#examples" class="contrast">Voir des exemples</a>
+        <a href="#contact">Me contacter</a>
+      </p>
+    </section>
+
+    <section id="features">
+      <h2>Pourquoi Pico ?</h2>
+      <ul>
+        <li>Ultra‑léger — pas de JS nécessaire pour la plupart des composants</li>
+        <li>Design moderne et accessible dès le HTML sémantique</li>
+        <li>Facile à personnaliser avec un peu de CSS</li>
+      </ul>
+    </section>
+
+    <section id="examples">
+      <h2>Exemples rapides</h2>
+
+      <div class="grid">
+        <article>
+          <h3>Carte simple</h3>
+          <p>Utilise les styles par défaut pour un rendu propre.</p>
+          <a class="contrast" href="#">En savoir plus</a>
+        </article>
+
+        <article>
+          <h3>Liste d'actions</h3>
+          <ol>
+            <li>Écrire du HTML sémantique</li>
+            <li>Ajouter le lien vers Pico</li>
+            <li>Personnaliser si besoin</li>
+          </ol>
+        </article>
+
+        <article>
+          <h3>Tableau</h3>
+          <table>
+            <caption>Exemple de tableau</caption>
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Rôle</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Alice</td>
+                <td>Designer</td>
+                <td>88</td>
+              </tr>
+              <tr>
+                <td>Bob</td>
+                <td>Dev</td>
+                <td>95</td>
+              </tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article>
+          <h3>Formulaire</h3>
+          <form>
+            <label for="name">Nom</label>
+            <input id="name" name="name" type="text" placeholder="Ton nom">
+
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" placeholder="ton@exemple.com">
+
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="4"></textarea>
+
+            <div class="grid">
+              <button type="submit">Envoyer</button>
+              <button type="reset" class="secondary">Réinitialiser</button>
+            </div>
+          </form>
+        </article>
+      </div>
+    </section>
+
+    <section id="contact">
+      <h2>Personnaliser</h2>
+      <p>Tu peux remplacer la feuille Pico par ta propre version compilée (via Sass) si tu veux contrôler les variables et thèmes.</p>
+      <details>
+        <summary>Astuce rapide</summary>
+        <p>Pour un thème sombre simple, tu peux utiliser la variable CSS <code>color-scheme: dark;</code> dans :root ou ajouter une classe qui inverse les couleurs via CSS personnalisé.</p>
+      </details>
+    </section>
+
+    <footer>
+      <p>© "MonSite" — Exemple utilisant Pico CSS. Sauvegarde ce fichier en <code>page_pico.html</code> et ouvre‑le dans ton navigateur.</p>
+    </footer>
+  </main>
+
+  <!-- Petit script facultatif : bascule de thème (local) -->
+  <script>
+    // bascule simple clair/sombre (stocké en localStorage)
+    (function(){
+      const key = 'pico-theme-dark';
+      if(localStorage.getItem(key) === '1') document.documentElement.style.colorScheme = 'dark';
+      // Exposition possible via console : localStorage.setItem('pico-theme-dark','1')
+    })();
+  </script>
+</body>
+</html>
