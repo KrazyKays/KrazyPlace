@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Page centrale — Pico CSS</title>
+  <!-- Utilise la version 'latest' de Pico via unpkg : léger et sans build -->
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <style>
+    /* Petites personnalisations sans alourdir */
+    .hero {
+      padding: 4rem 1rem;
+      text-align: center;
+    }
+    .container-narrow {
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    footer {
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--surface-3);
+    }
+  </style>
+</head>
+<body>
+  <header class="container container-narrow">
+    <nav>
+      <ul>
+        <li class="logo"><a href="#">MonSite</a></li>
+        <li><a href="/pages/center.html">Fonctionnalités</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container container-narrow">
+    <section class="hero">
+      <hgroup>
+        <h1>Pico CSS — Page de démonstration</h1>
+        <p class="lead">Un squelette HTML léger et propre utilisant Pico : design lisible, rapide et minimal.</p>
+      </hgroup>
+    </section>
+
+    <section id="features">
+      <h2>Pourquoi Pico ?</h2>
+      <ul>
+        <li>Ultra‑léger — pas de JS nécessaire pour la plupart des composants</li>
+        <li>Design moderne et accessible dès le HTML sémantique</li>
+        <li>Facile à personnaliser avec un peu de CSS</li>
+      </ul>
+    </section>
+
+    <footer>
+      <p>© KrazyPlace</p>
+    </footer>
+  </main>
+
+  <!-- Petit script facultatif : bascule de thème (local) -->
+  <script>
+    // bascule simple clair/sombre (stocké en localStorage)
+    (function(){
+      const key = 'pico-theme-dark';
+      if(localStorage.getItem(key) === '1') document.documentElement.style.colorScheme = 'dark';
+      // Exposition possible via console : localStorage.setItem('pico-theme-dark','1')
+    })();
+  </script>
+</body>
+</html>
