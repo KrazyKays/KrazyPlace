@@ -4,10 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>KrazyPlace — KGame</title>
-  <!-- Utilise la version 'latest' de Pico via unpkg : léger et sans build -->
   <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
   <style>
-    /* Petites personnalisations sans alourdir */
     .hero {
       padding: 4rem 1rem;
       text-align: center;
@@ -21,6 +19,16 @@
       margin-top: 3rem;
       padding-top: 1.5rem;
       border-top: 1px solid var(--surface-3);
+      text-align: center;
+    }
+    .daily-box {
+      background: var(--surface-2);
+      border-radius: var(--border-radius);
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+    .daily-box h2 {
+      margin-bottom: 0.5rem;
     }
   </style>
 </head>
@@ -38,7 +46,15 @@
     <section class="hero">
       <hgroup>
         <h1>KrazyPlace — KGame</h1>
+        <p>Bienvenue sur la page du KGame !</p>
       </hgroup>
+
+      <div class="daily-box">
+        <h2>Date du jour</h2>
+        <p id="date"></p>
+        <h2>Nombre du jour</h2>
+        <p id="number" style="font-size:1.5em;font-weight:bold;"></p>
+      </div>
     </section>
 
     <footer>
@@ -46,14 +62,33 @@
     </footer>
   </main>
 
-  <!-- Petit script facultatif : bascule de thème (local) -->
+  <!-- Script : thème clair/sombre -->
   <script>
-    // bascule simple clair/sombre (stocké en localStorage)
     (function(){
       const key = 'pico-theme-dark';
       if(localStorage.getItem(key) === '1') document.documentElement.style.colorScheme = 'dark';
-      // Exposition possible via console : localStorage.setItem('pico-theme-dark','1')
     })();
+  </script>
+
+  <!-- Script : date + nombre du jour -->
+  <script>
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('date').textContent = today;
+
+    // Générateur pseudo-aléatoire déterministe basé sur la date
+    function pseudoRandomFromString(str) {
+      let seed = 0;
+      for (let i = 0; i < str.length; i++) {
+        seed = (seed * 31 + str.charCodeAt(i)) % 1000000; // mélange simple
+      }
+      return seed;
+    }
+
+    // Si tu veux limiter la plage (ex: entre 1000 et 9999)
+    const raw = pseudoRandomFromString(today);
+    const randomNumber = 1000 + (raw % 9000);
+
+    document.getElementById('number').textContent = randomNumber;
   </script>
 </body>
 </html>
