@@ -52,7 +52,7 @@
       <div class="daily-box">
         <h2>Date du jour</h2>
         <p id="date"></p>
-        <h2>Nombre du jour</h2>
+        <h2>Nombre du jour (entre 0 et 1000)</h2>
         <p id="number" style="font-size:1.5em;font-weight:bold;"></p>
       </div>
     </section>
@@ -84,9 +84,8 @@
       return seed;
     }
 
-    // Si tu veux limiter la plage (ex: entre 1000 et 9999)
     const raw = pseudoRandomFromString(today);
-    const randomNumber = 1000 + (raw % 9000);
+    const randomNumber = (raw % 1000);
 
     document.getElementById('number').textContent = randomNumber;
   </script>
