@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>KrazyPlace — KGame</title>
+  <title>KrazyPlace — KMarket</title>
   <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
   <style>
     .hero {
-      padding: 4rem 1rem;
+      padding: 3rem 1rem;
       text-align: center;
     }
     .container-narrow {
@@ -21,14 +21,29 @@
       border-top: 1px solid var(--surface-3);
       text-align: center;
     }
-    .daily-box {
+    .game-box {
       background: var(--surface-2);
       border-radius: var(--border-radius);
       padding: 1.5rem;
       margin-top: 2rem;
     }
-    .daily-box h2 {
-      margin-bottom: 0.5rem;
+    .product-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      text-align: left;
+    }
+    .product {
+      padding: 1rem;
+      background: var(--surface-1);
+      border-radius: var(--border-radius);
+    }
+    .actions {
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
     }
   </style>
 </head>
@@ -37,7 +52,7 @@
     <nav>
       <ul>
         <li class="logo"><a href="/krazyplace">KrazyPlace</a></li>
-        <li><a href="/krazyplace/pages/game.html">KGame</a></li>
+        <li><a href="#">KMarket</a></li>
       </ul>
     </nav>
   </header>
@@ -45,24 +60,31 @@
   <main class="container container-narrow">
     <section class="hero">
       <hgroup>
-        <h1>KrazyPlace — KGame</h1>
-        <p>Bienvenue sur la page du KGame !</p>
+        <h1>KrazyPlace — KMarket</h1>
+        <p>Un mini-jeu d’investissement quotidien : achetez, vendez ou anticipez le marché !</p>
       </hgroup>
 
-      <div class="daily-box">
-        <h2>Date du jour</h2>
-        <p id="date"></p>
-        <h2>Nombre du jour (entre 0 et 1000)</h2>
-        <p id="number" style="font-size:1.5em;font-weight:bold;"></p>
+      <div class="game-box" id="game">
+        <h2>Année <span id="year">1</span> / 10</h2>
+        <p>Fonds : <strong id="funds">1000</strong>₿</p>
+
+        <div class="product-list" id="products"></div>
+
+        <div class="actions">
+          <button id="study">Faire une étude de marché (-100₿)</button>
+          <button id="next">Passer à l’année suivante</button>
+        </div>
+
+        <div id="message" style="margin-top:1rem;font-weight:bold;"></div>
       </div>
     </section>
 
     <footer>
-      <p>© KrazyPlace</p>
+      <p>© KrazyPlace — KMarket</p>
     </footer>
   </main>
 
-  <!-- Script : thème clair/sombre -->
+  <!-- Thème sombre -->
   <script>
     (function(){
       const key = 'pico-theme-dark';
@@ -70,24 +92,140 @@
     })();
   </script>
 
-  <!-- Script : date + nombre du jour -->
   <script>
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('date').textContent = today;
-
-    // Générateur pseudo-aléatoire déterministe basé sur la date
+    // --- Générateur pseudo-aléatoire déterministe ---
     function pseudoRandomFromString(str) {
       let seed = 0;
       for (let i = 0; i < str.length; i++) {
-        seed = (seed * 31 + str.charCodeAt(i)) % 1000000; // mélange simple
+        seed = (seed * 31 + str.charCodeAt(i)) % 1000000;
       }
-      return seed;
+      return function() {
+        seed = (seed * 1664525 + 1013904223) % 4294967296;
+        return seed / 4294967296;
+      };
     }
 
-    const raw = pseudoRandomFromString(today);
-    const randomNumber = (raw % 1000);
+    // --- Données de base ---
+    const today = new Date().toISOString().split('T')[0];
+    const rand = pseudoRandomFromString(today);
+    const allProducts = ["Or", "Pétrole", "Blé", "Technologie", "Crypto", "Immobilier", "Art", "Énergie solaire", "Acier", "Soie"];
 
-    document.getElementById('number').textContent = randomNumber;
+    let products = [];
+    let year = 1;
+    let funds = 1000;
+    let inventory = {};
+
+    // --- Tirage des produits et pré-calcul des variations sur 10 ans ---
+    function generateDailyProducts() {
+      const available = [...allProducts];
+      for (let i = 0; i < 3; i++) {
+        const idx = Math.floor(rand() * available.length);
+        const name = available.splice(idx, 1)[0];
+        const basePrice = Math.floor(rand() * 400) + 100;
+        let years = [{ year: 1, price: basePrice }];
+        let price = basePrice;
+
+        for (let y = 2; y <= 10; y++) {
+          const trend = (rand() - 0.5) * 0.4; // ±20%
+          const noise = (rand() - 0.5) * 0.1; // ±5%
+          price = Math.max(50, Math.round(price * (1 + trend + noise)));
+          years.push({ year: y, price, trend });
+        }
+        products.push({ name, years });
+      }
+    }
+
+    // --- Rendu des produits pour l’année en cours ---
+    function renderProducts(showPrediction = false) {
+      const list = document.getElementById("products");
+      list.innerHTML = "";
+      products.forEach(p => {
+        const data = p.years.find(y => y.year === year);
+        const next = p.years.find(y => y.year === year + 1);
+        const owned = inventory[p.name]?.qty || 0;
+        const prediction = showPrediction && next
+          ? `<br><small>Estimation : ${next.price > data.price ? "+" : ""}${Math.round(((next.price - data.price) / data.price) * 100)}% l’an prochain</small>`
+          : "";
+        list.innerHTML += `
+          <div class="product">
+            <h3>${p.name}</h3>
+            <p>Prix actuel : <strong>${data.price}</strong>₿ ${prediction}</p>
+            <p>Possédé : ${owned}</p>
+            <button onclick="buy('${p.name}')">Acheter</button>
+            <button onclick="sell('${p.name}')">Vendre</button>
+          </div>
+        `;
+      });
+      document.getElementById("funds").textContent = Math.round(funds);
+    }
+
+    function buy(name) {
+      const p = products.find(p => p.name === name);
+      const price = p.years.find(y => y.year === year).price;
+      if (funds < price) return showMessage("Fonds insuffisants !");
+      funds -= price;
+      if (!inventory[name]) inventory[name] = { qty: 0, buyPrice: 0 };
+      const inv = inventory[name];
+      inv.buyPrice = (inv.buyPrice * inv.qty + price) / (inv.qty + 1);
+      inv.qty++;
+      renderProducts();
+    }
+
+    function sell(name) {
+      const p = products.find(p => p.name === name);
+      const price = p.years.find(y => y.year === year).price;
+      const inv = inventory[name];
+      if (!inv || inv.qty === 0) return showMessage("Aucune unité à vendre !");
+      inv.qty--;
+      funds += price;
+      renderProducts();
+    }
+
+    function studyMarket() {
+      if (funds < 100) return showMessage("Fonds insuffisants pour l’étude !");
+      funds -= 100;
+      renderProducts(true);
+      showMessage("Étude de marché : prévisions affichées !");
+    }
+
+    function nextYear() {
+      if (year >= 10) return endGame();
+      year++;
+      document.getElementById("year").textContent = year;
+      renderProducts();
+      showMessage("Nouvelle année, nouveaux prix !");
+    }
+
+    function endGame() {
+      let total = funds;
+      Object.keys(inventory).forEach(name => {
+        const inv = inventory[name];
+        const p = products.find(p => p.name === name);
+        const finalPrice = p.years.find(y => y.year === 10).price;
+        total += inv.qty * finalPrice;
+      });
+      document.getElementById("game").innerHTML = `
+        <h2>Fin du jeu 🎉</h2>
+        <p>Année finale : ${year}</p>
+        <p>Richesse finale : <strong>${Math.round(total)}₿</strong></p>
+        <p>Les produits du jour étaient : ${products.map(p => p.name).join(", ")}.</p>
+        <p>Reviens demain pour un nouveau marché !</p>
+      `;
+    }
+
+    function showMessage(msg) {
+      const el = document.getElementById("message");
+      el.textContent = msg;
+      setTimeout(() => (el.textContent = ""), 3000);
+    }
+
+    // --- Événements ---
+    document.getElementById("study").onclick = studyMarket;
+    document.getElementById("next").onclick = nextYear;
+
+    // --- Démarrage ---
+    generateDailyProducts();
+    renderProducts();
   </script>
 </body>
 </html>
