@@ -146,7 +146,7 @@
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${prod}</td>
-          <td>${prices[i]} ₭</td>
+          <td>${prices[i]} ₭ <small>(${basePrices[i]} ₭)</small></td>
           <td>${stock[i]}</td>
           <td class="actions">
             <button onclick="buy(${i})">Acheter</button>
