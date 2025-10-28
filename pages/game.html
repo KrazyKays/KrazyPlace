@@ -40,6 +40,12 @@
       border-top: 1px solid var(--surface-3);
       padding-top: 1rem;
     }
+    #chartContainer {
+      margin-top: 2rem;
+      background: var(--surface-2);
+      border-radius: var(--border-radius);
+      padding: 1rem;
+    }
   </style>
 </head>
 <body>
@@ -85,6 +91,12 @@
           <div id="studyResult" style="margin:0.5rem 0;font-style:italic;"></div>
           <button id="nextYearBtn">Passer à l'année suivante (et payer le stockage)</button>
         </div>
+
+        <!-- Conteneur du graphique -->
+        <div id="chartContainer">
+          <h4>📈 Évolution des prix</h4>
+          <canvas id="priceChart"></canvas>
+        </div>
       </div>
 
       <div id="endGame" style="display:none;margin-top:2rem;">
@@ -95,6 +107,9 @@
   </main>
 
   <footer><p>© KrazyPlace</p></footer>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
     // === Générateur pseudo-aléatoire déterministe ===
@@ -112,6 +127,8 @@
 
     let rng, products, basePrices, prices;
     let year, money, stock;
+    let priceHistory = []; // historique des prix
+    let priceChart; // graphique Chart.js
 
     // === Fonction principale d'initialisation du jeu ===
     function startGame(seed) {
@@ -127,11 +144,13 @@
       money = 1000;
       stock = [0, 0, 0];
       prices = generatePrices(year);
+      priceHistory = [prices.slice()]; // première entrée de l’historique
 
       document.getElementById("gameBox").style.display = "block";
       document.getElementById("endGame").style.display = "none";
       document.getElementById("studyResult").innerHTML = "";
       renderMarket();
+      renderChart();
     }
 
     // === Fonction de génération des prix ===
@@ -211,9 +230,12 @@
         endGame();
         return;
       }
+
       prices = generatePrices(year);
+      priceHistory.push(prices.slice());
       document.getElementById("studyResult").innerHTML = "";
       renderMarket();
+      updateChart();
     };
 
     function endGame() {
@@ -222,6 +244,43 @@
       document.getElementById("gameBox").style.display = "none";
       document.getElementById("endGame").style.display = "block";
       document.getElementById("finalScore").textContent = Math.round(money);
+    }
+
+    // === Graphique Chart.js ===
+    function renderChart() {
+      const ctx = document.getElementById("priceChart").getContext("2d");
+      const labels = Array.from({ length: year }, (_, i) => "Année " + (i + 1));
+      const datasets = products.map((p, i) => ({
+        label: p,
+        data: priceHistory.map(row => row[i]),
+        borderWidth: 2,
+        fill: false,
+        tension: 0.2
+      }));
+
+      if (priceChart) priceChart.destroy();
+
+      priceChart = new Chart(ctx, {
+        type: "line",
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          plugins: { legend: { position: "bottom" } },
+          scales: {
+            y: { beginAtZero: true, title: { display: true, text: "Prix (₭)" } },
+            x: { title: { display: true, text: "Années" } }
+          }
+        }
+      });
+    }
+
+    function updateChart() {
+      const labels = Array.from({ length: year }, (_, i) => "Année " + (i + 1));
+      priceChart.data.labels = labels;
+      products.forEach((_, i) => {
+        priceChart.data.datasets[i].data = priceHistory.map(row => row[i]);
+      });
+      priceChart.update();
     }
 
     // === Gestion des boutons de choix ===
