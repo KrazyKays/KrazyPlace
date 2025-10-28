@@ -183,14 +183,14 @@
       const after = generatePrices(year + 2);
       const diffs = next.map((n, i) => ((after[i] - n) / n) * 100);
       const result = diffs
-        .map(
-          (d, i) =>
-            `${products[i]} : ${
-              d > 0
-                ? "hausse probable de " + d.toFixed(1) + "%"
-                : "baisse probable de " + Math.abs(d).toFixed(1) + "%"
-            }`
-        )
+        .map((d, i) => {
+          const valeur = Math.round(d); // arrondit à l’entier le plus proche
+          return `${products[i]} : ${
+            d > 0
+              ? "hausse probable de " + valeur + "% entre l'année N+1 et N+2"
+              : "baisse probable de " + Math.abs(valeur) + "% entre l'année N+1 et N+2"
+          }`;
+        })
         .join("<br>");
       document.getElementById("studyResult").innerHTML = result;
       renderMarket();
