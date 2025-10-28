@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>KrazyPlace — KMarket</title>
+  <title>KrazyPlace — Marché du jour</title>
   <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
   <style>
     .hero {
-      padding: 3rem 1rem;
+      padding: 4rem 1rem;
       text-align: center;
     }
     .container-narrow {
@@ -15,217 +15,205 @@
       margin-left: auto;
       margin-right: auto;
     }
-    footer {
-      margin-top: 3rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid var(--surface-3);
-      text-align: center;
-    }
-    .game-box {
+    .daily-box {
       background: var(--surface-2);
       border-radius: var(--border-radius);
       padding: 1.5rem;
       margin-top: 2rem;
     }
-    .product-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1rem;
-      text-align: left;
+    table {
+      width: 100%;
+      text-align: center;
     }
-    .product {
-      padding: 1rem;
-      background: var(--surface-1);
-      border-radius: var(--border-radius);
+    td, th {
+      padding: 0.5rem;
     }
-    .actions {
-      margin-top: 1.5rem;
-      display: flex;
-      justify-content: center;
-      gap: 1rem;
-      flex-wrap: wrap;
+    .actions button {
+      margin: 0.2rem;
+    }
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      border-top: 1px solid var(--surface-3);
+      padding-top: 1rem;
     }
   </style>
 </head>
 <body>
-  <header class="container container-narrow">
-    <nav>
-      <ul>
-        <li class="logo"><a href="/krazyplace">KrazyPlace</a></li>
-        <li><a href="#">KMarket</a></li>
-      </ul>
-    </nav>
-  </header>
-
   <main class="container container-narrow">
     <section class="hero">
-      <hgroup>
-        <h1>KrazyPlace — KMarket</h1>
-        <p>Un mini-jeu d’investissement quotidien : achetez, vendez ou anticipez le marché !</p>
-      </hgroup>
+      <h1>💰 Marché du jour — KGame</h1>
+      <p>Investis sur 10 ans et maximise ton capital !</p>
 
-      <div class="game-box" id="game">
-        <h2>Année <span id="year">1</span> / 10</h2>
-        <p>Fonds : <strong id="funds">1000</strong>₿</p>
+      <div class="daily-box">
+        <h3 id="date"></h3>
+        <p>Année <span id="year">1</span> / 10</p>
+        <p>Argent : <strong id="money">1000</strong> ₭</p>
+        <p>Coût de stockage : 2% de la valeur détenue à chaque fin d’année.</p>
 
-        <div class="product-list" id="products"></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Produit</th>
+              <th>Prix actuel</th>
+              <th>En stock</th>
+              <th class="actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="market"></tbody>
+        </table>
 
-        <div class="actions">
-          <button id="study">Faire une étude de marché (-100₿)</button>
-          <button id="next">Passer à l’année suivante</button>
+        <div style="margin-top:1rem;">
+          <button id="studyBtn">Faire une étude de marché (-100 ₭)</button>
+          <button id="nextYearBtn">Passer à l'année suivante</button>
         </div>
 
-        <div id="message" style="margin-top:1rem;font-weight:bold;"></div>
+        <div id="studyResult" style="margin-top:1rem;font-style:italic;"></div>
+      </div>
+
+      <div id="endGame" style="display:none;margin-top:2rem;">
+        <h2>🎉 Fin de partie</h2>
+        <p>Score final : <strong id="finalScore"></strong> ₭</p>
       </div>
     </section>
 
-    <footer>
-      <p>© KrazyPlace — KMarket</p>
-    </footer>
+    <footer><p>© KrazyPlace</p></footer>
   </main>
 
-  <!-- Thème sombre -->
   <script>
-    (function(){
-      const key = 'pico-theme-dark';
-      if(localStorage.getItem(key) === '1') document.documentElement.style.colorScheme = 'dark';
-    })();
-  </script>
-
-  <script>
-    // --- Générateur pseudo-aléatoire déterministe ---
-    function pseudoRandomFromString(str) {
-      let seed = 0;
-      for (let i = 0; i < str.length; i++) {
-        seed = (seed * 31 + str.charCodeAt(i)) % 1000000;
-      }
-      return function() {
-        seed = (seed * 1664525 + 1013904223) % 4294967296;
-        return seed / 4294967296;
+    // === Générateur pseudo-aléatoire déterministe ===
+    function pseudoRandom(seed) {
+      let s = seed;
+      return () => {
+        s = (s * 16807) % 2147483647;
+        return (s - 1) / 2147483646;
       };
     }
 
-    // --- Données de base ---
-    const today = new Date().toISOString().split('T')[0];
-    const rand = pseudoRandomFromString(today);
-    const allProducts = ["Or", "Pétrole", "Blé", "Technologie", "Crypto", "Immobilier", "Art", "Énergie solaire", "Acier", "Soie"];
+    // === Données du jour ===
+    const today = new Date().toISOString().split("T")[0];
+    document.getElementById("date").textContent = "Date : " + today;
 
-    let products = [];
+    // Même graine pour tous les joueurs du jour
+    const rng = pseudoRandom(
+      today.split("").reduce((a, c) => a + c.charCodeAt(0), 0)
+    );
+
+    const productsList = [
+      "Fer", "Orge", "Huile", "Bois", "Tissu", "Sel", "Thé", "Épices", "Soie", "Cuivre"
+    ];
+
+    // Tire 3 produits fixes pour la journée
+    const products = [];
+    while (products.length < 3) {
+      const p = productsList[Math.floor(rng() * productsList.length)];
+      if (!products.includes(p)) products.push(p);
+    }
+
+    // Chaque produit a un prix de base fixe pour la journée
+    const basePrices = products.map(() => Math.floor(50 + rng() * 150));
+
+    // === État du jeu ===
     let year = 1;
-    let funds = 1000;
-    let inventory = {};
+    let money = 1000;
+    let stock = [0, 0, 0];
 
-    // --- Tirage des produits et pré-calcul des variations sur 10 ans ---
-    function generateDailyProducts() {
-      const available = [...allProducts];
-      for (let i = 0; i < 3; i++) {
-        const idx = Math.floor(rand() * available.length);
-        const name = available.splice(idx, 1)[0];
-        const basePrice = Math.floor(rand() * 400) + 100;
-        let years = [{ year: 1, price: basePrice }];
-        let price = basePrice;
+    // === Fonction de génération des prix ===
+    function generatePrices(year) {
+      return basePrices.map((base, i) => {
+        const factor = 1 + Math.sin((year + i) * 1.7 + base) * 0.15 + (rng() - 0.5) * 0.1;
+        return Math.max(5, Math.round(base * factor));
+      });
+    }
 
-        for (let y = 2; y <= 10; y++) {
-          const trend = (rand() - 0.5) * 0.4; // ±20%
-          const noise = (rand() - 0.5) * 0.1; // ±5%
-          price = Math.max(50, Math.round(price * (1 + trend + noise)));
-          years.push({ year: y, price, trend });
-        }
-        products.push({ name, years });
+    let prices = generatePrices(year);
+
+    // === Affichage du marché ===
+    function renderMarket() {
+      const table = document.getElementById("market");
+      table.innerHTML = "";
+      products.forEach((prod, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${prod}</td>
+          <td>${prices[i]} ₭</td>
+          <td>${stock[i]}</td>
+          <td class="actions">
+            <button onclick="buy(${i})">Acheter</button>
+            <button onclick="sell(${i})">Vendre</button>
+          </td>`;
+        table.appendChild(tr);
+      });
+      document.getElementById("money").textContent = Math.round(money);
+      document.getElementById("year").textContent = year;
+    }
+
+    // === Actions joueur ===
+    function buy(i) {
+      if (money >= prices[i]) {
+        money -= prices[i];
+        stock[i]++;
+        renderMarket();
       }
     }
 
-    // --- Rendu des produits pour l’année en cours ---
-    function renderProducts(showPrediction = false) {
-      const list = document.getElementById("products");
-      list.innerHTML = "";
-      products.forEach(p => {
-        const data = p.years.find(y => y.year === year);
-        const next = p.years.find(y => y.year === year + 1);
-        const owned = inventory[p.name]?.qty || 0;
-        const prediction = showPrediction && next
-          ? `<br><small>Estimation : ${next.price > data.price ? "+" : ""}${Math.round(((next.price - data.price) / data.price) * 100)}% l’an prochain</small>`
-          : "";
-        list.innerHTML += `
-          <div class="product">
-            <h3>${p.name}</h3>
-            <p>Prix actuel : <strong>${data.price}</strong>₿ ${prediction}</p>
-            <p>Possédé : ${owned}</p>
-            <button onclick="buy('${p.name}')">Acheter</button>
-            <button onclick="sell('${p.name}')">Vendre</button>
-          </div>
-        `;
-      });
-      document.getElementById("funds").textContent = Math.round(funds);
+    function sell(i) {
+      if (stock[i] > 0) {
+        stock[i]--;
+        money += prices[i];
+        renderMarket();
+      }
     }
 
-    function buy(name) {
-      const p = products.find(p => p.name === name);
-      const price = p.years.find(y => y.year === year).price;
-      if (funds < price) return showMessage("Fonds insuffisants !");
-      funds -= price;
-      if (!inventory[name]) inventory[name] = { qty: 0, buyPrice: 0 };
-      const inv = inventory[name];
-      inv.buyPrice = (inv.buyPrice * inv.qty + price) / (inv.qty + 1);
-      inv.qty++;
-      renderProducts();
-    }
+    // Étude de marché
+    document.getElementById("studyBtn").onclick = () => {
+      if (money < 100) return;
+      money -= 100;
+      const next = generatePrices(year + 1);
+      const after = generatePrices(year + 2);
+      const diffs = next.map((n, i) => ((after[i] - n) / n) * 100);
+      const result = diffs
+        .map(
+          (d, i) =>
+            `${products[i]} : ${
+              d > 0
+                ? "hausse probable de " + d.toFixed(1) + "%"
+                : "baisse probable de " + Math.abs(d).toFixed(1) + "%"
+            }`
+        )
+        .join("<br>");
+      document.getElementById("studyResult").innerHTML = result;
+      renderMarket();
+    };
 
-    function sell(name) {
-      const p = products.find(p => p.name === name);
-      const price = p.years.find(y => y.year === year).price;
-      const inv = inventory[name];
-      if (!inv || inv.qty === 0) return showMessage("Aucune unité à vendre !");
-      inv.qty--;
-      funds += price;
-      renderProducts();
-    }
+    // Passer à l'année suivante
+    document.getElementById("nextYearBtn").onclick = () => {
+      // frais de stockage
+      const stockValue = stock.reduce((sum, q, i) => sum + q * prices[i], 0);
+      const storageCost = stockValue * 0.02;
+      money -= storageCost;
 
-    function studyMarket() {
-      if (funds < 100) return showMessage("Fonds insuffisants pour l’étude !");
-      funds -= 100;
-      renderProducts(true);
-      showMessage("Étude de marché : prévisions affichées !");
-    }
-
-    function nextYear() {
-      if (year >= 10) return endGame();
       year++;
-      document.getElementById("year").textContent = year;
-      renderProducts();
-      showMessage("Nouvelle année, nouveaux prix !");
-    }
+      if (year > 10) {
+        endGame();
+        return;
+      }
+      prices = generatePrices(year);
+      document.getElementById("studyResult").innerHTML = "";
+      renderMarket();
+    };
 
     function endGame() {
-      let total = funds;
-      Object.keys(inventory).forEach(name => {
-        const inv = inventory[name];
-        const p = products.find(p => p.name === name);
-        const finalPrice = p.years.find(y => y.year === 10).price;
-        total += inv.qty * finalPrice;
-      });
-      document.getElementById("game").innerHTML = `
-        <h2>Fin du jeu 🎉</h2>
-        <p>Année finale : ${year}</p>
-        <p>Richesse finale : <strong>${Math.round(total)}₿</strong></p>
-        <p>Les produits du jour étaient : ${products.map(p => p.name).join(", ")}.</p>
-        <p>Reviens demain pour un nouveau marché !</p>
-      `;
+      // tout vendre
+      const total = stock.reduce((sum, q, i) => sum + q * prices[i], 0);
+      money += total;
+      document.querySelector(".daily-box").style.display = "none";
+      document.getElementById("endGame").style.display = "block";
+      document.getElementById("finalScore").textContent = Math.round(money);
     }
 
-    function showMessage(msg) {
-      const el = document.getElementById("message");
-      el.textContent = msg;
-      setTimeout(() => (el.textContent = ""), 3000);
-    }
-
-    // --- Événements ---
-    document.getElementById("study").onclick = studyMarket;
-    document.getElementById("next").onclick = nextYear;
-
-    // --- Démarrage ---
-    generateDailyProducts();
-    renderProducts();
+    // === Init ===
+    renderMarket();
   </script>
 </body>
 </html>
