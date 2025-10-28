@@ -112,188 +112,202 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
-    // === Générateur pseudo-aléatoire déterministe ===
-    function pseudoRandom(seed) {
-      let s = seed;
-      return () => {
-        s = (s * 16807) % 2147483647;
-        return (s - 1) / 2147483646;
-      };
-    }
-
-    const productsList = [
-      "Fer", "Orge", "Huile", "Bois", "Tissu", "Sel", "Thé", "Épices", "Soie", "Cuivre"
-    ];
-
-    let rng, products, basePrices, prices;
-    let year, money, stock;
-    let priceHistory = []; // historique des prix
-    let priceChart; // graphique Chart.js
-
-    // === Fonction principale d'initialisation du jeu ===
-    function startGame(seed) {
-      rng = pseudoRandom(seed);
-      products = [];
-      while (products.length < 3) {
-        const p = productsList[Math.floor(rng() * productsList.length)];
-        if (!products.includes(p)) products.push(p);
-      }
-
-      basePrices = products.map(() => Math.floor(50 + rng() * 150));
-      year = 1;
-      money = 1000;
-      stock = [0, 0, 0];
-      prices = generatePrices(year);
-      priceHistory = [prices.slice()]; // première entrée de l’historique
-
-      document.getElementById("gameBox").style.display = "block";
-      document.getElementById("endGame").style.display = "none";
-      document.getElementById("studyResult").innerHTML = "";
-      renderMarket();
-      renderChart();
-    }
-
-    // === Fonction de génération des prix ===
-    function generatePrices(year) {
-      return basePrices.map((base, i) => {
-        const factor = 1 + Math.sin((year + i) * 1.7 + base) * 0.15 + (rng() - 0.5) * 0.1;
-        return Math.max(5, Math.round(base * factor));
-      });
-    }
-
-    // === Affichage du marché ===
-    function renderMarket() {
-      const table = document.getElementById("market");
-      table.innerHTML = "";
-      products.forEach((prod, i) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${prod}</td>
-          <td>${prices[i]} ₭ <small>(${basePrices[i]} ₭)</small></td>
-          <td>${stock[i]}</td>
-          <td class="actions">
-            <button onclick="buy(${i})">Acheter</button>
-            <button onclick="sell(${i})">Vendre</button>
-          </td>`;
-        table.appendChild(tr);
-      });
-      document.getElementById("money").textContent = Math.round(money);
-      document.getElementById("year").textContent = year;
-    }
-
-    // === Actions joueur ===
-    function buy(i) {
-      if (money >= prices[i]) {
-        money -= prices[i];
-        stock[i]++;
-        renderMarket();
-      }
-    }
-
-    function sell(i) {
-      if (stock[i] > 0) {
-        stock[i]--;
-        money += prices[i];
-        renderMarket();
-      }
-    }
-
-    // Étude de marché
-    document.getElementById("studyBtn").onclick = () => {
-      if (money < 100) return;
-      money -= 100;
-      const next = generatePrices(year + 1);
-      const after = generatePrices(year + 2);
-      const diffs = next.map((n, i) => ((after[i] - n) / n) * 100);
-      const result = diffs
-        .map((d, i) => {
-          const valeur = Math.round(d);
-          return `${products[i]} : ${
-            d > 0
-              ? "hausse probable de " + valeur + "% entre N+1 et N+2"
-              : "baisse probable de " + Math.abs(valeur) + "% entre N+1 et N+2"
-          }`;
-        })
-        .join("<br>");
-      document.getElementById("studyResult").innerHTML = result;
-      renderMarket();
+  // === Générateur pseudo-aléatoire déterministe ===
+  function pseudoRandom(seed) {
+    let s = seed;
+    return () => {
+      s = (s * 16807) % 2147483647;
+      return (s - 1) / 2147483646;
     };
+  }
 
-    // Passer à l'année suivante
-    document.getElementById("nextYearBtn").onclick = () => {
-      const stockValue = stock.reduce((sum, q, i) => sum + q * prices[i], 0);
-      const storageCost = stockValue * 0.02;
-      money -= storageCost;
+  const productsList = [
+    "Fer", "Orge", "Huile", "Bois", "Tissu", "Sel", "Thé", "Épices", "Soie", "Cuivre"
+  ];
 
-      year++;
-      if (year > 10) {
-        endGame();
-        return;
-      }
+  let rng, products, basePrices, prices;
+  let year, money, stock;
+  let priceHistory = [];
+  let priceChart;
 
-      prices = generatePrices(year);
-      priceHistory.push(prices.slice());
-      document.getElementById("studyResult").innerHTML = "";
-      renderMarket();
-      updateChart();
-    };
-
-    function endGame() {
-      const total = stock.reduce((sum, q, i) => sum + q * prices[i], 0);
-      money += total;
-      document.getElementById("gameBox").style.display = "none";
-      document.getElementById("endGame").style.display = "block";
-      document.getElementById("finalScore").textContent = Math.round(money);
+  function startGame(seed) {
+    rng = pseudoRandom(seed);
+    products = [];
+    while (products.length < 3) {
+      const p = productsList[Math.floor(rng() * productsList.length)];
+      if (!products.includes(p)) products.push(p);
     }
 
-    // === Graphique Chart.js ===
-    function renderChart() {
-      const ctx = document.getElementById("priceChart").getContext("2d");
-      const labels = Array.from({ length: year }, (_, i) => "Année " + (i + 1));
-      const datasets = products.map((p, i) => ({
-        label: p,
-        data: priceHistory.map(row => row[i]),
-        borderWidth: 2,
-        fill: false,
-        tension: 0.2
-      }));
+    basePrices = products.map(() => Math.floor(50 + rng() * 150));
+    year = 1;
+    money = 1000;
+    stock = [0, 0, 0];
+    prices = generatePrices(year);
+    priceHistory = [prices.slice()];
 
-      if (priceChart) priceChart.destroy();
+    document.getElementById("gameBox").style.display = "block";
+    document.getElementById("endGame").style.display = "none";
+    document.getElementById("studyResult").innerHTML = "";
+    renderMarket();
+    renderChart();
+  }
 
-      priceChart = new Chart(ctx, {
-        type: "line",
-        data: { labels, datasets },
-        options: {
-          responsive: true,
-          plugins: { legend: { position: "bottom" } },
-          scales: {
-            y: { beginAtZero: true, title: { display: true, text: "Prix (₭)" } },
-            x: { title: { display: true, text: "Années" } }
-          }
+  function generatePrices(year) {
+    return basePrices.map((base, i) => {
+      const factor = 1 + Math.sin((year + i) * 1.7 + base) * 0.15 + (rng() - 0.5) * 0.1;
+      return Math.max(5, Math.round(base * factor));
+    });
+  }
+
+  function renderMarket() {
+    const table = document.getElementById("market");
+    table.innerHTML = "";
+    products.forEach((prod, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${prod}</td>
+        <td>${prices[i]} ₭ <small>(${basePrices[i]} ₭)</small></td>
+        <td>${stock[i]}</td>
+        <td class="actions">
+          <button onclick="buy(${i})">Acheter</button>
+          <button onclick="sell(${i})">Vendre</button>
+        </td>`;
+      table.appendChild(tr);
+    });
+    document.getElementById("money").textContent = Math.round(money);
+    document.getElementById("year").textContent = year;
+  }
+
+  // === Actions joueur avec effet sur les prix ===
+  function buy(i) {
+    if (money >= prices[i]) {
+      money -= prices[i];
+      stock[i]++;
+      // Achat = demande ↑ → prix augmente légèrement (2 à 4 %)
+      prices[i] = Math.round(prices[i] * (1.02 + rng() * 0.02));
+      renderMarket();
+      updateChartAfterTrade();
+    }
+  }
+
+  function sell(i) {
+    if (stock[i] > 0) {
+      stock[i]--;
+      money += prices[i];
+      // Vente = offre ↑ → prix baisse légèrement (1.5 à 3 %)
+      prices[i] = Math.round(prices[i] * (0.97 - rng() * 0.015));
+      prices[i] = Math.max(5, prices[i]); // pas en dessous de 5 ₭
+      renderMarket();
+      updateChartAfterTrade();
+    }
+  }
+
+  // Étude de marché
+  document.getElementById("studyBtn").onclick = () => {
+    if (money < 100) return;
+    money -= 100;
+    const next = generatePrices(year + 1);
+    const after = generatePrices(year + 2);
+    const diffs = next.map((n, i) => ((after[i] - n) / n) * 100);
+    const result = diffs
+      .map((d, i) => {
+        const valeur = Math.round(d);
+        return `${products[i]} : ${
+          d > 0
+            ? "hausse probable de " + valeur + "% entre N+1 et N+2"
+            : "baisse probable de " + Math.abs(valeur) + "% entre N+1 et N+2"
+        }`;
+      })
+      .join("<br>");
+    document.getElementById("studyResult").innerHTML = result;
+    renderMarket();
+  };
+
+  // Passer à l'année suivante
+  document.getElementById("nextYearBtn").onclick = () => {
+    const stockValue = stock.reduce((sum, q, i) => sum + q * prices[i], 0);
+    const storageCost = stockValue * 0.02;
+    money -= storageCost;
+
+    year++;
+    if (year > 10) {
+      endGame();
+      return;
+    }
+
+    prices = generatePrices(year);
+    priceHistory.push(prices.slice());
+    document.getElementById("studyResult").innerHTML = "";
+    renderMarket();
+    updateChart();
+  };
+
+  function endGame() {
+    const total = stock.reduce((sum, q, i) => sum + q * prices[i], 0);
+    money += total;
+    document.getElementById("gameBox").style.display = "none";
+    document.getElementById("endGame").style.display = "block";
+    document.getElementById("finalScore").textContent = Math.round(money);
+  }
+
+  // === Graphique ===
+  function renderChart() {
+    const ctx = document.getElementById("priceChart").getContext("2d");
+    const labels = Array.from({ length: year }, (_, i) => "Année " + (i + 1));
+    const datasets = products.map((p, i) => ({
+      label: p,
+      data: priceHistory.map(row => row[i]),
+      borderWidth: 2,
+      fill: false,
+      tension: 0.2
+    }));
+
+    if (priceChart) priceChart.destroy();
+
+    priceChart = new Chart(ctx, {
+      type: "line",
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        plugins: { legend: { position: "bottom" } },
+        scales: {
+          y: { beginAtZero: true, title: { display: true, text: "Prix (₭)" } },
+          x: { title: { display: true, text: "Années" } }
         }
-      });
-    }
+      }
+    });
+  }
 
-    function updateChart() {
-      const labels = Array.from({ length: year }, (_, i) => "Année " + (i + 1));
-      priceChart.data.labels = labels;
-      products.forEach((_, i) => {
-        priceChart.data.datasets[i].data = priceHistory.map(row => row[i]);
-      });
-      priceChart.update();
-    }
+  function updateChart() {
+    const labels = Array.from({ length: year }, (_, i) => "Année " + (i + 1));
+    priceChart.data.labels = labels;
+    products.forEach((_, i) => {
+      priceChart.data.datasets[i].data = priceHistory.map(row => row[i]);
+    });
+    priceChart.update();
+  }
 
-    // === Gestion des boutons de choix ===
-    document.getElementById("dailyGameBtn").onclick = () => {
-      const today = new Date().toISOString().split("T")[0];
-      const seed = today.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-      startGame(seed);
-    };
+  // Met à jour juste les derniers points quand on trade
+  function updateChartAfterTrade() {
+    if (!priceChart) return;
+    const current = priceHistory[priceHistory.length - 1];
+    priceChart.data.datasets.forEach((ds, i) => {
+      ds.data[year - 1] = prices[i];
+    });
+    priceChart.update();
+  }
 
-    document.getElementById("randomGameBtn").onclick = () => {
-      const seed = Math.floor(Math.random() * 2147483647);
-      startGame(seed);
-    };
-  </script>
+  // === Choix du mode de partie ===
+  document.getElementById("dailyGameBtn").onclick = () => {
+    const today = new Date().toISOString().split("T")[0];
+    const seed = today.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+    startGame(seed);
+  };
+
+  document.getElementById("randomGameBtn").onclick = () => {
+    const seed = Math.floor(Math.random() * 2147483647);
+    startGame(seed);
+  };
+</script>
 </body>
 </html>
