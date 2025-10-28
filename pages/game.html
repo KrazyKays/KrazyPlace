@@ -57,7 +57,13 @@
       <h1>KrazyPlace — KGame💰</h1>
       <p>Investis sur 10 ans et maximise ton capital !</p>
 
-      <div class="daily-box">
+      <!-- Boutons de choix de partie -->
+      <div style="margin: 1rem 0;">
+        <button id="dailyGameBtn">Partie du jour 🌞</button>
+        <button id="randomGameBtn">Partie aléatoire 🎲</button>
+      </div>
+
+      <div class="daily-box" id="gameBox" style="display:none;">
         <h3>Année <span id="year">1</span> / 10</h3>
         <p>Argent : <strong id="money">1000</strong> ₭</p>
         <p>Coût de stockage : 2% de la valeur détenue à chaque fin d’année.</p>
@@ -76,9 +82,7 @@
 
         <div style="margin-top:1rem;">
           <button id="studyBtn">Faire une étude de marché entre N+1 et N+2 (-100 ₭)</button>
-          
           <div id="studyResult" style="margin:0.5rem 0;font-style:italic;"></div>
-          
           <button id="nextYearBtn">Passer à l'année suivante (et payer le stockage)</button>
         </div>
       </div>
@@ -102,32 +106,33 @@
       };
     }
 
-    // === Données du jour ===
-    const today = new Date().toISOString().split("T")[0];
-
-    // Même graine pour tous les joueurs du jour
-    const rng = pseudoRandom(
-      today.split("").reduce((a, c) => a + c.charCodeAt(0), 0)
-    );
-
     const productsList = [
       "Fer", "Orge", "Huile", "Bois", "Tissu", "Sel", "Thé", "Épices", "Soie", "Cuivre"
     ];
 
-    // Tire 3 produits fixes pour la journée
-    const products = [];
-    while (products.length < 3) {
-      const p = productsList[Math.floor(rng() * productsList.length)];
-      if (!products.includes(p)) products.push(p);
+    let rng, products, basePrices, prices;
+    let year, money, stock;
+
+    // === Fonction principale d'initialisation du jeu ===
+    function startGame(seed) {
+      rng = pseudoRandom(seed);
+      products = [];
+      while (products.length < 3) {
+        const p = productsList[Math.floor(rng() * productsList.length)];
+        if (!products.includes(p)) products.push(p);
+      }
+
+      basePrices = products.map(() => Math.floor(50 + rng() * 150));
+      year = 1;
+      money = 1000;
+      stock = [0, 0, 0];
+      prices = generatePrices(year);
+
+      document.getElementById("gameBox").style.display = "block";
+      document.getElementById("endGame").style.display = "none";
+      document.getElementById("studyResult").innerHTML = "";
+      renderMarket();
     }
-
-    // Chaque produit a un prix de base fixe pour la journée
-    const basePrices = products.map(() => Math.floor(50 + rng() * 150));
-
-    // === État du jeu ===
-    let year = 1;
-    let money = 1000;
-    let stock = [0, 0, 0];
 
     // === Fonction de génération des prix ===
     function generatePrices(year) {
@@ -136,8 +141,6 @@
         return Math.max(5, Math.round(base * factor));
       });
     }
-
-    let prices = generatePrices(year);
 
     // === Affichage du marché ===
     function renderMarket() {
@@ -185,11 +188,11 @@
       const diffs = next.map((n, i) => ((after[i] - n) / n) * 100);
       const result = diffs
         .map((d, i) => {
-          const valeur = Math.round(d); // arrondit à l’entier le plus proche
+          const valeur = Math.round(d);
           return `${products[i]} : ${
             d > 0
-              ? "hausse probable de " + valeur + "% entre l'année N+1 et N+2"
-              : "baisse probable de " + Math.abs(valeur) + "% entre l'année N+1 et N+2"
+              ? "hausse probable de " + valeur + "% entre N+1 et N+2"
+              : "baisse probable de " + Math.abs(valeur) + "% entre N+1 et N+2"
           }`;
         })
         .join("<br>");
@@ -199,7 +202,6 @@
 
     // Passer à l'année suivante
     document.getElementById("nextYearBtn").onclick = () => {
-      // frais de stockage
       const stockValue = stock.reduce((sum, q, i) => sum + q * prices[i], 0);
       const storageCost = stockValue * 0.02;
       money -= storageCost;
@@ -215,16 +217,24 @@
     };
 
     function endGame() {
-      // tout vendre
       const total = stock.reduce((sum, q, i) => sum + q * prices[i], 0);
       money += total;
-      document.querySelector(".daily-box").style.display = "none";
+      document.getElementById("gameBox").style.display = "none";
       document.getElementById("endGame").style.display = "block";
       document.getElementById("finalScore").textContent = Math.round(money);
     }
 
-    // === Init ===
-    renderMarket();
+    // === Gestion des boutons de choix ===
+    document.getElementById("dailyGameBtn").onclick = () => {
+      const today = new Date().toISOString().split("T")[0];
+      const seed = today.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+      startGame(seed);
+    };
+
+    document.getElementById("randomGameBtn").onclick = () => {
+      const seed = Math.floor(Math.random() * 2147483647);
+      startGame(seed);
+    };
   </script>
 </body>
 </html>
