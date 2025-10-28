@@ -7,6 +7,18 @@
   <!-- Utilise la version 'latest' de Pico via unpkg : léger et sans build -->
   <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
   <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    main {
+      flex: 1; /* pousse le footer vers le bas */
+    }
     /* Petites personnalisations sans alourdir */
     .hero {
       padding: 1rem 1rem;
@@ -16,9 +28,6 @@
       max-width: 900px;
       margin-left: auto;
       margin-right: auto;
-    }
-    main {
-      flex: 1; /* prend tout l’espace libre entre header et footer */
     }
     footer {
       margin-top: 3rem;
