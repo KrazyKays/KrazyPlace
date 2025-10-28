@@ -42,12 +42,11 @@
 <body>
   <main class="container container-narrow">
     <section class="hero">
-      <h1>💰 Marché du jour — KGame</h1>
+      <h1>KrazyPlace — KGame💰</h1>
       <p>Investis sur 10 ans et maximise ton capital !</p>
 
       <div class="daily-box">
-        <h3 id="date"></h3>
-        <p>Année <span id="year">1</span> / 10</p>
+        <h3>Année <span id="year">1</span> / 10</h3>
         <p>Argent : <strong id="money">1000</strong> ₭</p>
         <p>Coût de stockage : 2% de la valeur détenue à chaque fin d’année.</p>
 
@@ -64,8 +63,8 @@
         </table>
 
         <div style="margin-top:1rem;">
-          <button id="studyBtn">Faire une étude de marché (-100 ₭)</button>
-          <button id="nextYearBtn">Passer à l'année suivante</button>
+          <button id="studyBtn">Faire une étude de marché entre N+1 et N+2 (-100 ₭)</button>
+          <button id="nextYearBtn">Passer à l'année suivante (et payer le stockage)</button>
         </div>
 
         <div id="studyResult" style="margin-top:1rem;font-style:italic;"></div>
@@ -92,7 +91,6 @@
 
     // === Données du jour ===
     const today = new Date().toISOString().split("T")[0];
-    document.getElementById("date").textContent = "Date : " + today;
 
     // Même graine pour tous les joueurs du jour
     const rng = pseudoRandom(
