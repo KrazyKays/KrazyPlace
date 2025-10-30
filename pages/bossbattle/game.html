@@ -11,6 +11,7 @@
     .hero { padding: 0.5rem; text-align: center; }
     .container-narrow { max-width: 900px; margin: auto; }
     .daily-box { background: var(--surface-2); border-radius: var(--border-radius); padding: 1.5rem; margin-top: 1rem; }
+
     .troop, .boss {
       background: var(--surface-3);
       border-radius: var(--border-radius);
@@ -109,13 +110,8 @@
   const troopNames = ["Guerrier", "Archer", "Lancier", "Mage", "Assassin", "Cavalier", "Golem", "Voleur", "Sorcier", "Barbare", "Moine", "Berserker"];
   const bossesNames = ["Roi Démon", "Hydre des Sables", "Titan de Fer", "Dragon des Brumes", "Dieu Déchu"];
 
-  let rng;
-  let army = [];
-  let availableChoices = [];
-  let currentBossIndex = 0;
-  let bosses = [];
-  let phase = "recruit";
-  let selectedTroops = [];
+  let rng, army = [], availableChoices = [], currentBossIndex = 0, bosses = [];
+  let phase = "recruit", selectedTroops = [];
 
   function startGame(seed) {
     rng = pseudoRandom(seed);
@@ -128,9 +124,7 @@
     nextRecruitmentRound();
   }
 
-  function randomStat() {
-    return Math.floor(20 + rng() * 80);
-  }
+  function randomStat() { return Math.floor(20 + rng() * 80); }
 
   function generateTroop() {
     const troop = {
@@ -166,10 +160,7 @@
 
   // === Recrutement ===
   function nextRecruitmentRound() {
-    if (army.length >= 10) {
-      startBattlePhase();
-      return;
-    }
+    if (army.length >= 10) return startBattlePhase();
     phase = "recruit";
     document.getElementById("phaseTitle").textContent = `Recrutement (${army.length}/10)`;
     availableChoices = [generateTroop(), generateTroop(), generateTroop()];
@@ -185,8 +176,7 @@
       div.innerHTML = `
         <strong>${t.name}</strong> <span class="rank rank-${t.rank}">${t.rank}</span><br>
         ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}<br>
-        <button onclick="selectTroop(${i})">Choisir</button>
-      `;
+        <button onclick="selectTroop(${i})">Choisir</button>`;
       container.appendChild(div);
     });
   }
@@ -215,6 +205,7 @@
       <p>Choisis les troupes à envoyer au combat :</p>
     `;
 
+    let canFight = false;
     army.forEach((t, i) => {
       const div = document.createElement("div");
       div.className = "troop";
@@ -223,18 +214,22 @@
         div.innerHTML = `
           <strong>${t.name}</strong> <span class="rank rank-${t.rank}">${t.rank}</span><br>
           ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}
-          <div class="resting-label">En repos</div>
-        `;
+          <div class="resting-label">En repos</div>`;
       } else {
+        canFight = true;
         if (selectedTroops.includes(i)) div.classList.add("selected");
         div.onclick = () => toggleSelection(i, div);
         div.innerHTML = `
           <strong>${t.name}</strong> <span class="rank rank-${t.rank}">${t.rank}</span><br>
-          ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}
-        `;
+          ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}`;
       }
       container.appendChild(div);
     });
+
+    if (!canFight) {
+      endGame(false, "Toutes les troupes sont en repos !");
+      return;
+    }
 
     const launchBtn = document.createElement("button");
     launchBtn.textContent = "⚔️ Lancer le combat";
@@ -243,8 +238,7 @@
   }
 
   function toggleSelection(index, element) {
-    const troop = army[index];
-    if (troop.resting) return;
+    if (army[index].resting) return;
     if (selectedTroops.includes(index)) {
       selectedTroops = selectedTroops.filter(i => i !== index);
       element.classList.remove("selected");
@@ -261,12 +255,14 @@
       display.textContent = "Aucune troupe sélectionnée.";
       return;
     }
-    let total = 0;
+    let totalMelee = 0, totalRange = 0, totalSpeed = 0;
     selectedTroops.forEach(i => {
       const t = army[i];
-      total += t.melee + t.range + t.speed;
+      totalMelee += t.melee;
+      totalRange += t.range;
+      totalSpeed += t.speed;
     });
-    display.textContent = `Somme totale des 3 stats : ${total}`;
+    display.textContent = `⚔️ ${totalMelee} | 🏹 ${totalRange} | 💨 ${totalSpeed}`;
   }
 
   function launchBattle() {
@@ -292,7 +288,6 @@
 
     if (boss.hp <= 0) {
       container.innerHTML += `<p>💥 ${boss.name} est vaincu !</p>`;
-      // Troupes survivantes passent au repos
       selectedTroops.forEach(i => army[i].resting = true);
       currentBossIndex++;
       if (currentBossIndex >= bosses.length) {
@@ -313,19 +308,16 @@
   }
 
   function recoverAndNextBoss() {
-    // Les troupes au repos récupèrent après un tour
-    army.forEach(t => {
-      if (t.resting) t.resting = false;
-    });
+    army.forEach(t => { if (t.resting) t.resting = false; });
     startBattlePhase();
   }
 
-  function endGame(victory) {
+  function endGame(victory, msg="") {
     document.getElementById("gameBox").style.display = "none";
     document.getElementById("endGame").style.display = "block";
     document.getElementById("finalMessage").textContent = victory
       ? "🏆 Victoire ! Tu as vaincu les 5 boss !"
-      : "💀 Défaite... ton armée a été anéantie.";
+      : "💀 Défaite... " + (msg || "ton armée a été anéantie.");
   }
 
   document.getElementById("dailyGameBtn").onclick = () => {
@@ -333,7 +325,6 @@
     const seed = today.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
     startGame(seed);
   };
-
   document.getElementById("randomGameBtn").onclick = () => {
     const seed = Math.floor(Math.random() * 2147483647);
     startGame(seed);
