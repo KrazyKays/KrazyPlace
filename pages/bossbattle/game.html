@@ -20,16 +20,29 @@
       cursor: pointer;
       transition: all 0.2s ease-in-out;
       width: 150px;
+      position: relative;
     }
-    .troop:hover {
-      background: var(--surface-1);
-      transform: scale(1.05);
-    }
+    .troop:hover { background: var(--surface-1); transform: scale(1.05); }
     .troop.selected {
       border: 3px solid var(--primary);
       box-shadow: 0 0 10px var(--primary);
       background: rgba(0, 120, 255, 0.15);
       transform: scale(1.1);
+    }
+    .troop.resting {
+      opacity: 0.5;
+      cursor: not-allowed;
+      filter: grayscale(0.7);
+    }
+    .resting-label {
+      position: absolute;
+      bottom: 4px;
+      right: 6px;
+      background: rgba(255, 200, 0, 0.8);
+      color: black;
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
     }
     .rank {
       font-weight: bold;
@@ -44,10 +57,7 @@
     .rank-B { background: #22c55e; }
     .rank-A { background: #f59e0b; }
     .rank-S { background: #ef4444; animation: pulse 1s infinite alternate; }
-    @keyframes pulse {
-      from { box-shadow: 0 0 5px #ef4444; }
-      to { box-shadow: 0 0 20px #ef4444; }
-    }
+    @keyframes pulse { from { box-shadow: 0 0 5px #ef4444; } to { box-shadow: 0 0 20px #ef4444; } }
     footer { text-align: center; margin-top: 1rem; border-top: 1px solid var(--surface-3); padding-top: 1rem; }
   </style>
 </head>
@@ -74,6 +84,7 @@
       <div class="daily-box" id="gameBox" style="display:none;">
         <h3 id="phaseTitle">Recrutement</h3>
         <div id="gameContent"></div>
+        <p id="sumDisplay" style="font-weight:bold; margin-top:1rem;"></p>
       </div>
 
       <div id="endGame" style="display:none; margin-top:2rem;">
@@ -126,7 +137,8 @@
       name: troopNames[Math.floor(rng() * troopNames.length)],
       melee: randomStat(),
       range: randomStat(),
-      speed: randomStat()
+      speed: randomStat(),
+      resting: false
     };
     troop.rank = getRank(troop);
     return troop;
@@ -190,6 +202,7 @@
     document.getElementById("phaseTitle").textContent = `Combat contre le ${bosses[currentBossIndex].name}`;
     selectedTroops = [];
     renderBattleSetup();
+    updateSumDisplay();
   }
 
   function renderBattleSetup() {
@@ -205,12 +218,21 @@
     army.forEach((t, i) => {
       const div = document.createElement("div");
       div.className = "troop";
-      if (selectedTroops.includes(i)) div.classList.add("selected");
-      div.onclick = () => toggleSelection(i, div);
-      div.innerHTML = `
-        <strong>${t.name}</strong> <span class="rank rank-${t.rank}">${t.rank}</span><br>
-        ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}
-      `;
+      if (t.resting) {
+        div.classList.add("resting");
+        div.innerHTML = `
+          <strong>${t.name}</strong> <span class="rank rank-${t.rank}">${t.rank}</span><br>
+          ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}
+          <div class="resting-label">En repos</div>
+        `;
+      } else {
+        if (selectedTroops.includes(i)) div.classList.add("selected");
+        div.onclick = () => toggleSelection(i, div);
+        div.innerHTML = `
+          <strong>${t.name}</strong> <span class="rank rank-${t.rank}">${t.rank}</span><br>
+          ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}
+        `;
+      }
       container.appendChild(div);
     });
 
@@ -221,6 +243,8 @@
   }
 
   function toggleSelection(index, element) {
+    const troop = army[index];
+    if (troop.resting) return;
     if (selectedTroops.includes(index)) {
       selectedTroops = selectedTroops.filter(i => i !== index);
       element.classList.remove("selected");
@@ -228,13 +252,27 @@
       selectedTroops.push(index);
       element.classList.add("selected");
     }
+    updateSumDisplay();
+  }
+
+  function updateSumDisplay() {
+    const display = document.getElementById("sumDisplay");
+    if (selectedTroops.length === 0) {
+      display.textContent = "Aucune troupe sélectionnée.";
+      return;
+    }
+    let total = 0;
+    selectedTroops.forEach(i => {
+      const t = army[i];
+      total += t.melee + t.range + t.speed;
+    });
+    display.textContent = `Somme totale des 3 stats : ${total}`;
   }
 
   function launchBattle() {
     if (selectedTroops.length === 0) return alert("Choisis au moins une troupe !");
     const boss = bosses[currentBossIndex];
 
-    // === Nouveau système de dégâts ===
     let totalMelee = 0, totalRange = 0, totalSpeed = 0;
     selectedTroops.forEach(i => {
       const t = army[i];
@@ -243,11 +281,7 @@
       totalSpeed += t.speed;
     });
 
-    const diffs = [
-      totalMelee - boss.melee,
-      totalRange - boss.range,
-      totalSpeed - boss.speed
-    ];
+    const diffs = [totalMelee - boss.melee, totalRange - boss.range, totalSpeed - boss.speed];
     const positiveDiffs = diffs.filter(d => d > 0);
     const damage = positiveDiffs.length > 0 ? Math.max(...positiveDiffs) : 0;
 
@@ -258,15 +292,16 @@
 
     if (boss.hp <= 0) {
       container.innerHTML += `<p>💥 ${boss.name} est vaincu !</p>`;
+      // Troupes survivantes passent au repos
+      selectedTroops.forEach(i => army[i].resting = true);
       currentBossIndex++;
       if (currentBossIndex >= bosses.length) {
         endGame(true);
       } else {
-        container.innerHTML += `<button onclick="startBattlePhase()">Prochain boss</button>`;
+        container.innerHTML += `<button onclick="recoverAndNextBoss()">Prochain boss</button>`;
       }
     } else {
       container.innerHTML += `<p>Il reste ${boss.hp} PV au boss.</p>`;
-      // Les troupes meurent si le boss survit
       army = army.filter((_, i) => !selectedTroops.includes(i));
       selectedTroops = [];
       if (army.length === 0) {
@@ -275,6 +310,14 @@
         container.innerHTML += `<button onclick="renderBattleSetup()">Envoyer d'autres troupes</button>`;
       }
     }
+  }
+
+  function recoverAndNextBoss() {
+    // Les troupes au repos récupèrent après un tour
+    army.forEach(t => {
+      if (t.resting) t.resting = false;
+    });
+    startBattlePhase();
   }
 
   function endGame(victory) {
