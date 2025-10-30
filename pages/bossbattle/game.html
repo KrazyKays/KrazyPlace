@@ -6,120 +6,50 @@
   <title>KrazyPlace — Boss battle</title>
   <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-    }
-    
-    main {
-      flex: 1;
-    }
-    .hero {
-      padding: 0.5rem 0.5rem;
-      text-align: center;
-    }
-    .container-narrow {
-      max-width: 900px;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .daily-box {
-      background: var(--surface-2);
-      border-radius: var(--border-radius);
-      padding: 1.5rem;
-      margin-top: 1rem;
-    }
-    #studyBtn {
-      margin-bottom: 0.5rem;
-    }
-    table {
-      width: 100%;
-      text-align: center;
-    }
-    td, th {
-      padding: 0.5rem;
-    }
-    .actions button {
-      margin: 0.2rem;
-    }
-    footer {
-      margin-top: 1rem;
-      text-align: center;
-      border-top: 1px solid var(--surface-3);
-      padding-top: 1rem;
-    }
-    #chartContainer {
-      margin-top: 2rem;
-      background: var(--surface-2);
-      border-radius: var(--border-radius);
-      padding: 1rem;
-    }
+    html, body { height: 100%; margin: 0; display: flex; flex-direction: column; }
+    main { flex: 1; }
+    .hero { padding: 0.5rem; text-align: center; }
+    .container-narrow { max-width: 900px; margin: auto; }
+    .daily-box { background: var(--surface-2); border-radius: var(--border-radius); padding: 1.5rem; margin-top: 1rem; }
+    .choices button { margin: 0.5rem; }
+    .troop, .boss { background: var(--surface-3); border-radius: var(--border-radius); padding: 0.5rem; margin: 0.5rem; display: inline-block; }
+    footer { text-align: center; margin-top: 1rem; border-top: 1px solid var(--surface-3); padding-top: 1rem; }
   </style>
 </head>
 <body>
   <header class="container container-narrow">
     <nav>
       <ul>
-        <li class="logo"><a href="/krazyplace">KrazyPlace</a></li>
-        <li><a href="/krazyplace/pages/bossbattle/game.html">Boss battle</a></li>
+        <li class="logo"><a href="#">KrazyPlace</a></li>
+        <li><a href="#">Boss battle</a></li>
       </ul>
     </nav>
   </header>
-  
+
   <main class="container container-narrow">
     <section class="hero">
-      <h1>KrazyPlace — Boss battle</h1>
-      <p>Un combat trop dur pour toi !</p>
+      <h1>KrazyPlace — Boss Battle</h1>
+      <p>Forme ton armée et terrasse les 5 boss !</p>
 
-      <!-- Boutons de choix de partie -->
+      <!-- Choix de la partie -->
       <div style="margin: 1rem 0;">
         <button id="dailyGameBtn">Partie du jour 🌞</button>
         <button id="randomGameBtn">Partie aléatoire 🎲</button>
       </div>
 
       <div class="daily-box" id="gameBox" style="display:none;">
-        <h3>Année <span id="year">1</span> / 10</h3>
-        <p>Argent : <strong id="money">1000</strong> ₭</p>
-        <p>Coût de stockage : 2% de la valeur détenue à chaque fin d’année.</p>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Produit</th>
-              <th>Prix actuel</th>
-              <th>En stock</th>
-              <th class="actions">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="market"></tbody>
-        </table>
-
-        <div style="margin-top:1rem;">
-          <button id="studyBtn">Faire une étude de marché entre N+1 et N+2 (-100 ₭)</button>
-          <div id="studyResult" style="margin:0.5rem 0;font-style:italic;"></div>
-          <button id="nextYearBtn">Passer à l'année suivante (et payer le stockage)</button>
-        </div>
-
-        <!-- Conteneur du graphique -->
-        <div id="chartContainer">
-          <h4>📈 Évolution des prix</h4>
-          <canvas id="priceChart"></canvas>
-        </div>
+        <h3 id="phaseTitle">Recrutement</h3>
+        <div id="gameContent"></div>
       </div>
 
-      <div id="endGame" style="display:none;margin-top:2rem;">
+      <div id="endGame" style="display:none; margin-top:2rem;">
         <h2>🎉 Fin de partie</h2>
-        <p>Score final : <strong id="finalScore"></strong> ₭</p>
+        <p id="finalMessage"></p>
       </div>
     </section>
   </main>
 
   <footer><p>© KrazyPlace</p></footer>
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
   // === Générateur pseudo-aléatoire déterministe ===
@@ -131,180 +61,156 @@
     };
   }
 
-  const productsList = [
-    "Fer", "Orge", "Huile", "Bois", "Tissu", "Sel", "Thé", "Épices", "Soie", "Cuivre"
-  ];
+  // === Structures de données ===
+  const troopNames = ["Guerrier", "Archer", "Lancier", "Mage", "Assassin", "Cavalier", "Golem", "Voleur", "Sorcier", "Barbare", "Moine", "Berserker"];
+  const bossesNames = ["Roi Démon", "Hydre des Sables", "Titan de Fer", "Dragon des Brumes", "Dieu Déchu"];
 
-  let rng, products, basePrices, prices;
-  let year, money, stock;
-  let priceHistory = [];
-  let priceChart;
+  let rng;
+  let army = [];
+  let availableChoices = [];
+  let currentBossIndex = 0;
+  let bosses = [];
+  let phase = "recruit"; // recruit → battle → end
 
+  // === Gestion de la partie ===
   function startGame(seed) {
     rng = pseudoRandom(seed);
-    products = [];
-    while (products.length < 3) {
-      const p = productsList[Math.floor(rng() * productsList.length)];
-      if (!products.includes(p)) products.push(p);
-    }
-
-    basePrices = products.map(() => Math.floor(50 + rng() * 150));
-    year = 1;
-    money = 1000;
-    stock = [0, 0, 0];
-    prices = generatePrices(year);
-    priceHistory = [prices.slice()];
-
+    army = [];
+    bosses = generateBosses();
+    currentBossIndex = 0;
+    phase = "recruit";
     document.getElementById("gameBox").style.display = "block";
     document.getElementById("endGame").style.display = "none";
-    document.getElementById("studyResult").innerHTML = "";
-    renderMarket();
-    renderChart();
+    nextRecruitmentRound();
   }
 
-  function generatePrices(year) {
-    return basePrices.map((base, i) => {
-      const factor = 1 + Math.sin((year + i) * 1.7 + base) * 0.15 + (rng() - 0.5) * 0.1;
-      return Math.max(5, Math.round(base * factor));
-    });
+  // === Génération des troupes et boss ===
+  function randomStat() {
+    return Math.floor(20 + rng() * 80); // 20 à 100
   }
 
-  function renderMarket() {
-    const table = document.getElementById("market");
-    table.innerHTML = "";
-    products.forEach((prod, i) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${prod}</td>
-        <td>${prices[i]} ₭ <small>(${basePrices[i]} ₭)</small></td>
-        <td>${stock[i]}</td>
-        <td class="actions">
-          <button onclick="buy(${i})">Acheter</button>
-          <button onclick="sell(${i})">Vendre</button>
-        </td>`;
-      table.appendChild(tr);
-    });
-    document.getElementById("money").textContent = Math.round(money);
-    document.getElementById("year").textContent = year;
+  function generateTroop() {
+    return {
+      name: troopNames[Math.floor(rng() * troopNames.length)],
+      melee: randomStat(),
+      range: randomStat(),
+      speed: randomStat()
+    };
   }
 
-  // === Actions joueur avec effet sur les prix ===
-  function buy(i) {
-    if (money >= prices[i]) {
-      money -= prices[i];
-      stock[i]++;
-      // Achat = demande ↑ → prix augmente légèrement (2 à 4 %)
-      prices[i] = Math.round(prices[i] * (1.02 + rng() * 0.02));
-      renderMarket();
-      updateChartAfterTrade();
-    }
+  function generateBosses() {
+    return bossesNames.map(name => ({
+      name,
+      melee: randomStat() + 50,
+      range: randomStat() + 50,
+      speed: randomStat() + 50,
+      hp: Math.floor(300 + rng() * 300)
+    }));
   }
 
-  function sell(i) {
-    if (stock[i] > 0) {
-      stock[i]--;
-      money += prices[i];
-      // Vente = offre ↑ → prix baisse légèrement (1.5 à 3 %)
-      prices[i] = Math.round(prices[i] * (0.97 - rng() * 0.015));
-      prices[i] = Math.max(5, prices[i]); // pas en dessous de 5 ₭
-      renderMarket();
-      updateChartAfterTrade();
-    }
-  }
-
-  // Étude de marché
-  document.getElementById("studyBtn").onclick = () => {
-    if (money < 100) return;
-    money -= 100;
-    const next = generatePrices(year + 1);
-    const after = generatePrices(year + 2);
-    const diffs = next.map((n, i) => ((after[i] - n) / n) * 100);
-    const result = diffs
-      .map((d, i) => {
-        const valeur = Math.round(d);
-        return `${products[i]} : ${
-          d > 0
-            ? "hausse probable de " + valeur + "% entre N+1 et N+2"
-            : "baisse probable de " + Math.abs(valeur) + "% entre N+1 et N+2"
-        }`;
-      })
-      .join("<br>");
-    document.getElementById("studyResult").innerHTML = result;
-    renderMarket();
-  };
-
-  // Passer à l'année suivante
-  document.getElementById("nextYearBtn").onclick = () => {
-    const stockValue = stock.reduce((sum, q, i) => sum + q * prices[i], 0);
-    const storageCost = stockValue * 0.02;
-    money -= storageCost;
-
-    year++;
-    if (year > 10) {
-      endGame();
+  // === Recrutement ===
+  function nextRecruitmentRound() {
+    if (army.length >= 10) {
+      startBattlePhase();
       return;
     }
+    phase = "recruit";
+    document.getElementById("phaseTitle").textContent = `Recrutement (${army.length}/10)`;
+    availableChoices = [generateTroop(), generateTroop(), generateTroop()];
+    renderRecruitChoices();
+  }
 
-    prices = generatePrices(year);
-    priceHistory.push(prices.slice());
-    document.getElementById("studyResult").innerHTML = "";
-    renderMarket();
-    updateChart();
-  };
+  function renderRecruitChoices() {
+    const container = document.getElementById("gameContent");
+    container.innerHTML = "<p>Choisis une troupe :</p>";
+    availableChoices.forEach((t, i) => {
+      const div = document.createElement("div");
+      div.className = "troop";
+      div.innerHTML = `
+        <strong>${t.name}</strong><br>
+        ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}<br>
+        <button onclick="selectTroop(${i})">Choisir</button>
+      `;
+      container.appendChild(div);
+    });
+  }
 
-  function endGame() {
-    const total = stock.reduce((sum, q, i) => sum + q * prices[i], 0);
-    money += total;
+  function selectTroop(i) {
+    army.push(availableChoices[i]);
+    nextRecruitmentRound();
+  }
+
+  // === Combat ===
+  function startBattlePhase() {
+    phase = "battle";
+    document.getElementById("phaseTitle").textContent = `Combat contre le ${bosses[currentBossIndex].name}`;
+    renderBattleSetup();
+  }
+
+  function renderBattleSetup() {
+    const container = document.getElementById("gameContent");
+    const boss = bosses[currentBossIndex];
+    container.innerHTML = `
+      <div class="boss"><h3>${boss.name}</h3>
+      ❤️ ${boss.hp} PV<br>
+      ⚔️ ${boss.melee} | 🏹 ${boss.range} | 💨 ${boss.speed}</div>
+      <p>Choisis les troupes à envoyer au combat :</p>
+    `;
+
+    army.forEach((t, i) => {
+      const div = document.createElement("div");
+      div.className = "troop";
+      div.innerHTML = `
+        <strong>${t.name}</strong><br>
+        ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}<br>
+        <button onclick="sendToBattle(${i})">Envoyer</button>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function sendToBattle(index) {
+    const boss = bosses[currentBossIndex];
+    const troop = army[index];
+
+    // dégâts = plus grande différence absolue entre une stat du joueur et du boss
+    const diffs = [
+      Math.abs(troop.melee - boss.melee),
+      Math.abs(troop.range - boss.range),
+      Math.abs(troop.speed - boss.speed)
+    ];
+    const damage = Math.max(...diffs);
+
+    boss.hp -= damage;
+
+    // La troupe meurt dans tous les cas
+    army.splice(index, 1);
+
+    const container = document.getElementById("gameContent");
+    container.innerHTML = `<p>${troop.name} inflige ${damage} dégâts au ${boss.name} !</p>`;
+
+    if (boss.hp <= 0) {
+      container.innerHTML += `<p>💥 ${boss.name} est vaincu !</p>`;
+      currentBossIndex++;
+      if (currentBossIndex >= bosses.length) {
+        endGame(true);
+      } else {
+        container.innerHTML += `<button onclick="startBattlePhase()">Prochain boss</button>`;
+      }
+    } else if (army.length === 0) {
+      endGame(false);
+    } else {
+      container.innerHTML += `<p>Il reste ${boss.hp} PV au boss.</p><button onclick="renderBattleSetup()">Continuer</button>`;
+    }
+  }
+
+  // === Fin de partie ===
+  function endGame(victory) {
     document.getElementById("gameBox").style.display = "none";
     document.getElementById("endGame").style.display = "block";
-    document.getElementById("finalScore").textContent = Math.round(money);
-  }
-
-  // === Graphique ===
-  function renderChart() {
-    const ctx = document.getElementById("priceChart").getContext("2d");
-    const labels = Array.from({ length: year }, (_, i) => "Année " + (i + 1));
-    const datasets = products.map((p, i) => ({
-      label: p,
-      data: priceHistory.map(row => row[i]),
-      borderWidth: 2,
-      fill: false,
-      tension: 0.2
-    }));
-
-    if (priceChart) priceChart.destroy();
-
-    priceChart = new Chart(ctx, {
-      type: "line",
-      data: { labels, datasets },
-      options: {
-        responsive: true,
-        plugins: { legend: { position: "bottom" } },
-        scales: {
-          y: { beginAtZero: true, title: { display: true, text: "Prix (₭)" } },
-          x: { title: { display: true, text: "Années" } }
-        }
-      }
-    });
-  }
-
-  function updateChart() {
-    const labels = Array.from({ length: year }, (_, i) => "Année " + (i + 1));
-    priceChart.data.labels = labels;
-    products.forEach((_, i) => {
-      priceChart.data.datasets[i].data = priceHistory.map(row => row[i]);
-    });
-    priceChart.update();
-  }
-
-  // Met à jour juste les derniers points quand on trade
-  function updateChartAfterTrade() {
-    if (!priceChart) return;
-    const current = priceHistory[priceHistory.length - 1];
-    priceChart.data.datasets.forEach((ds, i) => {
-      ds.data[year - 1] = prices[i];
-    });
-    priceChart.update();
+    document.getElementById("finalMessage").textContent = victory
+      ? "🏆 Victoire ! Tu as vaincu les 5 boss !"
+      : "💀 Défaite... ton armée a été anéantie.";
   }
 
   // === Choix du mode de partie ===
@@ -318,6 +224,6 @@
     const seed = Math.floor(Math.random() * 2147483647);
     startGame(seed);
   };
-</script>
+  </script>
 </body>
 </html>
