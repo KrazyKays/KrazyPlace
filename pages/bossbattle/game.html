@@ -11,9 +11,43 @@
     .hero { padding: 0.5rem; text-align: center; }
     .container-narrow { max-width: 900px; margin: auto; }
     .daily-box { background: var(--surface-2); border-radius: var(--border-radius); padding: 1.5rem; margin-top: 1rem; }
-    .choices button { margin: 0.5rem; }
-    .troop, .boss { background: var(--surface-3); border-radius: var(--border-radius); padding: 0.5rem; margin: 0.5rem; display: inline-block; cursor: pointer; }
-    .troop.selected { border: 2px solid var(--primary); background: var(--surface-1); }
+    .troop, .boss {
+      background: var(--surface-3);
+      border-radius: var(--border-radius);
+      padding: 0.5rem;
+      margin: 0.5rem;
+      display: inline-block;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      width: 150px;
+    }
+    .troop:hover {
+      background: var(--surface-1);
+      transform: scale(1.05);
+    }
+    .troop.selected {
+      border: 3px solid var(--primary);
+      box-shadow: 0 0 10px var(--primary);
+      background: rgba(0, 120, 255, 0.15);
+      transform: scale(1.1);
+    }
+    .rank {
+      font-weight: bold;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.5rem;
+      color: white;
+      display: inline-block;
+    }
+    .rank-F { background: #777; }
+    .rank-D { background: #8b5cf6; }
+    .rank-C { background: #3b82f6; }
+    .rank-B { background: #22c55e; }
+    .rank-A { background: #f59e0b; }
+    .rank-S { background: #ef4444; animation: pulse 1s infinite alternate; }
+    @keyframes pulse {
+      from { box-shadow: 0 0 5px #ef4444; }
+      to { box-shadow: 0 0 20px #ef4444; }
+    }
     footer { text-align: center; margin-top: 1rem; border-top: 1px solid var(--surface-3); padding-top: 1rem; }
   </style>
 </head>
@@ -22,7 +56,7 @@
     <nav>
       <ul>
         <li class="logo"><a href="/krazyplace">KrazyPlace</a></li>
-        <li><a href="/krazyplace/pages/bossbattle/game.html">Boss battle</a></li>
+        <li><a href="#">Boss battle</a></li>
       </ul>
     </nav>
   </header>
@@ -32,7 +66,6 @@
       <h1>KrazyPlace — Boss Battle</h1>
       <p>Forme ton armée et terrasse les 5 boss !</p>
 
-      <!-- Choix de la partie -->
       <div style="margin: 1rem 0;">
         <button id="dailyGameBtn">Partie du jour 🌞</button>
         <button id="randomGameBtn">Partie aléatoire 🎲</button>
@@ -62,7 +95,6 @@
     };
   }
 
-  // === Structures de données ===
   const troopNames = ["Guerrier", "Archer", "Lancier", "Mage", "Assassin", "Cavalier", "Golem", "Voleur", "Sorcier", "Barbare", "Moine", "Berserker"];
   const bossesNames = ["Roi Démon", "Hydre des Sables", "Titan de Fer", "Dragon des Brumes", "Dieu Déchu"];
 
@@ -71,10 +103,9 @@
   let availableChoices = [];
   let currentBossIndex = 0;
   let bosses = [];
-  let phase = "recruit"; // recruit → battle → end
+  let phase = "recruit";
   let selectedTroops = [];
 
-  // === Gestion de la partie ===
   function startGame(seed) {
     rng = pseudoRandom(seed);
     army = [];
@@ -86,18 +117,29 @@
     nextRecruitmentRound();
   }
 
-  // === Génération des troupes et boss ===
   function randomStat() {
-    return Math.floor(20 + rng() * 80); // 20 à 100
+    return Math.floor(20 + rng() * 80);
   }
 
   function generateTroop() {
-    return {
+    const troop = {
       name: troopNames[Math.floor(rng() * troopNames.length)],
       melee: randomStat(),
       range: randomStat(),
       speed: randomStat()
     };
+    troop.rank = getRank(troop);
+    return troop;
+  }
+
+  function getRank(t) {
+    const total = t.melee + t.range + t.speed;
+    if (total >= 270) return "S";
+    if (total >= 240) return "A";
+    if (total >= 200) return "B";
+    if (total >= 160) return "C";
+    if (total >= 120) return "D";
+    return "F";
   }
 
   function generateBosses() {
@@ -129,7 +171,7 @@
       const div = document.createElement("div");
       div.className = "troop";
       div.innerHTML = `
-        <strong>${t.name}</strong><br>
+        <strong>${t.name}</strong> <span class="rank rank-${t.rank}">${t.rank}</span><br>
         ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}<br>
         <button onclick="selectTroop(${i})">Choisir</button>
       `;
@@ -166,7 +208,7 @@
       if (selectedTroops.includes(i)) div.classList.add("selected");
       div.onclick = () => toggleSelection(i, div);
       div.innerHTML = `
-        <strong>${t.name}</strong><br>
+        <strong>${t.name}</strong> <span class="rank rank-${t.rank}">${t.rank}</span><br>
         ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}
       `;
       container.appendChild(div);
@@ -192,22 +234,27 @@
     if (selectedTroops.length === 0) return alert("Choisis au moins une troupe !");
     const boss = bosses[currentBossIndex];
 
-    // Calcul des dégâts totaux infligés par toutes les troupes sélectionnées
-    let totalDamage = 0;
+    // === Nouveau système de dégâts ===
+    let totalMelee = 0, totalRange = 0, totalSpeed = 0;
     selectedTroops.forEach(i => {
       const t = army[i];
-      const diffs = [
-        Math.abs(t.melee - boss.melee),
-        Math.abs(t.range - boss.range),
-        Math.abs(t.speed - boss.speed)
-      ];
-      totalDamage += Math.max(...diffs);
+      totalMelee += t.melee;
+      totalRange += t.range;
+      totalSpeed += t.speed;
     });
 
-    boss.hp -= totalDamage;
+    const diffs = [
+      totalMelee - boss.melee,
+      totalRange - boss.range,
+      totalSpeed - boss.speed
+    ];
+    const positiveDiffs = diffs.filter(d => d > 0);
+    const damage = positiveDiffs.length > 0 ? Math.max(...positiveDiffs) : 0;
+
+    boss.hp -= damage;
 
     const container = document.getElementById("gameContent");
-    container.innerHTML = `<p>Les troupes infligent ${totalDamage} dégâts au ${boss.name} !</p>`;
+    container.innerHTML = `<p>Les troupes infligent ${damage} dégâts au ${boss.name} !</p>`;
 
     if (boss.hp <= 0) {
       container.innerHTML += `<p>💥 ${boss.name} est vaincu !</p>`;
@@ -219,11 +266,9 @@
       }
     } else {
       container.innerHTML += `<p>Il reste ${boss.hp} PV au boss.</p>`;
-
-      // Les troupes sélectionnées meurent si le boss survit
+      // Les troupes meurent si le boss survit
       army = army.filter((_, i) => !selectedTroops.includes(i));
       selectedTroops = [];
-
       if (army.length === 0) {
         endGame(false);
       } else {
@@ -232,7 +277,6 @@
     }
   }
 
-  // === Fin de partie ===
   function endGame(victory) {
     document.getElementById("gameBox").style.display = "none";
     document.getElementById("endGame").style.display = "block";
@@ -241,7 +285,6 @@
       : "💀 Défaite... ton armée a été anéantie.";
   }
 
-  // === Choix du mode de partie ===
   document.getElementById("dailyGameBtn").onclick = () => {
     const today = new Date().toISOString().split("T")[0];
     const seed = today.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
