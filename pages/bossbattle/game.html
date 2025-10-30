@@ -59,6 +59,23 @@
     .rank-S { background: #ef4444; animation: pulse 1s infinite alternate; }
     @keyframes pulse { from { box-shadow: 0 0 5px #ef4444; } to { box-shadow: 0 0 20px #ef4444; } }
     footer { text-align: center; margin-top: 1rem; border-top: 1px solid var(--surface-3); padding-top: 1rem; }
+    /* Ajout visuel pour troupes au repos */
+    .resting {
+      opacity: 0.5;
+      cursor: not-allowed;
+      position: relative;
+    }
+    .resting::after {
+      content: "😴 Repos";
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: rgba(255,255,255,0.8);
+      color: #000;
+      padding: 2px 6px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+    }
   </style>
 </head>
 <body>
@@ -96,199 +113,179 @@
 
   <footer><p>© KrazyPlace</p></footer>
 
-  <style>
-  /* Ajout visuel pour troupes au repos */
-  .resting {
-    opacity: 0.5;
-    cursor: not-allowed;
-    position: relative;
-  }
-  .resting::after {
-    content: "😴 Repos";
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: rgba(255,255,255,0.8);
-    color: #000;
-    padding: 2px 6px;
-    border-radius: 5px;
-    font-size: 0.8rem;
-  }
-</style>
-
-<script>
-  let rng;
-  let army = [];
-  let availableChoices = [];
-  let currentBossIndex = 0;
-  let bosses = [];
-  let phase = "recruit";
-  let selectedTroops = [];
-  
-  function startGame(seed) {
-    rng = pseudoRandom(seed);
-    army = [];
-    bosses = generateBosses();
-    currentBossIndex = 0;
-    phase = "recruit";
-    document.getElementById("gameBox").style.display = "block";
-    document.getElementById("endGame").style.display = "none";
-    nextRecruitmentRound();
-  }
-  
-  function generateTroop() {
-    const troop = {
-      name: troopNames[Math.floor(rng() * troopNames.length)],
-      melee: randomStat(),
-      range: randomStat(),
-      speed: randomStat(),
-      resting: false // nouveau champ
-    };
-    troop.rank = getRank(troop);
-    return troop;
-  }
-  
-  // === Combat ===
-  function startBattlePhase() {
-    phase = "battle";
-    document.getElementById("phaseTitle").textContent = `Combat contre le ${bosses[currentBossIndex].name}`;
-    selectedTroops = [];
-    renderBattleSetup();
-  }
-  
-  function renderBattleSetup() {
-    const container = document.getElementById("gameContent");
-    const boss = bosses[currentBossIndex];
-    container.innerHTML = `
-      <div class="boss"><h3>${boss.name}</h3>
-      ❤️ ${boss.hp} PV<br>
-      ⚔️ ${boss.melee} | 🏹 ${boss.range} | 💨 ${boss.speed}</div>
-      <p>Choisis les troupes à envoyer au combat :</p>
-      <p id="sumStats">⚔️ 0 | 🏹 0 | 💨 0</p>
-    `;
-  
-    let canFight = false;
-  
-    army.forEach((t, i) => {
-      const div = document.createElement("div");
-      div.className = "troop";
-      if (t.resting) {
-        div.classList.add("resting");
-      } else {
-        canFight = true;
-        if (selectedTroops.includes(i)) div.classList.add("selected");
-        div.onclick = () => toggleSelection(i, div);
-      }
-      div.innerHTML = `
-        <strong>${t.name}</strong> <span class="rank rank-${t.rank}">${t.rank}</span><br>
-        ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}
-      `;
-      container.appendChild(div);
-    });
-  
-    if (!canFight) {
-      // toutes les troupes sont au repos → défaite immédiate
-      endGame(false, "Toutes tes troupes sont en repos !");
-      return;
+  <script>
+    let rng;
+    let army = [];
+    let availableChoices = [];
+    let currentBossIndex = 0;
+    let bosses = [];
+    let phase = "recruit";
+    let selectedTroops = [];
+    
+    function startGame(seed) {
+      rng = pseudoRandom(seed);
+      army = [];
+      bosses = generateBosses();
+      currentBossIndex = 0;
+      phase = "recruit";
+      document.getElementById("gameBox").style.display = "block";
+      document.getElementById("endGame").style.display = "none";
+      nextRecruitmentRound();
     }
-  
-    const launchBtn = document.createElement("button");
-    launchBtn.textContent = "⚔️ Lancer le combat";
-    launchBtn.onclick = launchBattle;
-    container.appendChild(launchBtn);
-  }
-  
-  function toggleSelection(index, element) {
-    if (army[index].resting) return; // troupes en repos non sélectionnables
-    if (selectedTroops.includes(index)) {
-      selectedTroops = selectedTroops.filter(i => i !== index);
-      element.classList.remove("selected");
-    } else {
-      selectedTroops.push(index);
-      element.classList.add("selected");
+    
+    function generateTroop() {
+      const troop = {
+        name: troopNames[Math.floor(rng() * troopNames.length)],
+        melee: randomStat(),
+        range: randomStat(),
+        speed: randomStat(),
+        resting: false // nouveau champ
+      };
+      troop.rank = getRank(troop);
+      return troop;
     }
-    updateSumStats();
-  }
-  
-  function updateSumStats() {
-    let totalMelee = 0, totalRange = 0, totalSpeed = 0;
-    selectedTroops.forEach(i => {
-      const t = army[i];
-      totalMelee += t.melee;
-      totalRange += t.range;
-      totalSpeed += t.speed;
-    });
-    document.getElementById("sumStats").textContent =
-      `⚔️ ${totalMelee} | 🏹 ${totalRange} | 💨 ${totalSpeed}`;
-  }
-  
-  function launchBattle() {
-    if (selectedTroops.length === 0) return alert("Choisis au moins une troupe !");
-    const boss = bosses[currentBossIndex];
-  
-    // Calcul des stats totales
-    let totalMelee = 0, totalRange = 0, totalSpeed = 0;
-    selectedTroops.forEach(i => {
-      const t = army[i];
-      totalMelee += t.melee;
-      totalRange += t.range;
-      totalSpeed += t.speed;
-    });
-  
-    const diffs = [
-      totalMelee - boss.melee,
-      totalRange - boss.range,
-      totalSpeed - boss.speed
-    ];
-    const positiveDiffs = diffs.filter(d => d > 0);
-    const damage = positiveDiffs.length > 0 ? Math.max(...positiveDiffs) : 0;
-  
-    boss.hp -= damage;
-  
-    const container = document.getElementById("gameContent");
-    container.innerHTML = `<p>Les troupes infligent ${damage} dégâts au ${boss.name} !</p>`;
-  
-    if (boss.hp <= 0) {
-      container.innerHTML += `<p>💥 ${boss.name} est vaincu !</p>`;
-      // Les troupes sélectionnées survivent et se reposent un tour
-      selectedTroops.forEach(i => {
-        army[i].resting = true;
-      });
-  
-      currentBossIndex++;
-      if (currentBossIndex >= bosses.length) {
-        endGame(true);
-      } else {
-        container.innerHTML += `<button onclick="nextTurn()">Tour suivant</button>`;
-      }
-    } else {
-      container.innerHTML += `<p>Il reste ${boss.hp} PV au boss.</p>`;
-      // Les troupes meurent si le boss survit
-      army = army.filter((_, i) => !selectedTroops.includes(i));
+    
+    // === Combat ===
+    function startBattlePhase() {
+      phase = "battle";
+      document.getElementById("phaseTitle").textContent = `Combat contre le ${bosses[currentBossIndex].name}`;
       selectedTroops = [];
-      if (army.length === 0) {
-        endGame(false);
+      renderBattleSetup();
+    }
+    
+    function renderBattleSetup() {
+      const container = document.getElementById("gameContent");
+      const boss = bosses[currentBossIndex];
+      container.innerHTML = `
+        <div class="boss"><h3>${boss.name}</h3>
+        ❤️ ${boss.hp} PV<br>
+        ⚔️ ${boss.melee} | 🏹 ${boss.range} | 💨 ${boss.speed}</div>
+        <p>Choisis les troupes à envoyer au combat :</p>
+        <p id="sumStats">⚔️ 0 | 🏹 0 | 💨 0</p>
+      `;
+    
+      let canFight = false;
+    
+      army.forEach((t, i) => {
+        const div = document.createElement("div");
+        div.className = "troop";
+        if (t.resting) {
+          div.classList.add("resting");
+        } else {
+          canFight = true;
+          if (selectedTroops.includes(i)) div.classList.add("selected");
+          div.onclick = () => toggleSelection(i, div);
+        }
+        div.innerHTML = `
+          <strong>${t.name}</strong> <span class="rank rank-${t.rank}">${t.rank}</span><br>
+          ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}
+        `;
+        container.appendChild(div);
+      });
+    
+      if (!canFight) {
+        // toutes les troupes sont au repos → défaite immédiate
+        endGame(false, "Toutes tes troupes sont en repos !");
+        return;
+      }
+    
+      const launchBtn = document.createElement("button");
+      launchBtn.textContent = "⚔️ Lancer le combat";
+      launchBtn.onclick = launchBattle;
+      container.appendChild(launchBtn);
+    }
+    
+    function toggleSelection(index, element) {
+      if (army[index].resting) return; // troupes en repos non sélectionnables
+      if (selectedTroops.includes(index)) {
+        selectedTroops = selectedTroops.filter(i => i !== index);
+        element.classList.remove("selected");
       } else {
-        container.innerHTML += `<button onclick="renderBattleSetup()">Envoyer d'autres troupes</button>`;
+        selectedTroops.push(index);
+        element.classList.add("selected");
+      }
+      updateSumStats();
+    }
+    
+    function updateSumStats() {
+      let totalMelee = 0, totalRange = 0, totalSpeed = 0;
+      selectedTroops.forEach(i => {
+        const t = army[i];
+        totalMelee += t.melee;
+        totalRange += t.range;
+        totalSpeed += t.speed;
+      });
+      document.getElementById("sumStats").textContent =
+        `⚔️ ${totalMelee} | 🏹 ${totalRange} | 💨 ${totalSpeed}`;
+    }
+    
+    function launchBattle() {
+      if (selectedTroops.length === 0) return alert("Choisis au moins une troupe !");
+      const boss = bosses[currentBossIndex];
+    
+      // Calcul des stats totales
+      let totalMelee = 0, totalRange = 0, totalSpeed = 0;
+      selectedTroops.forEach(i => {
+        const t = army[i];
+        totalMelee += t.melee;
+        totalRange += t.range;
+        totalSpeed += t.speed;
+      });
+    
+      const diffs = [
+        totalMelee - boss.melee,
+        totalRange - boss.range,
+        totalSpeed - boss.speed
+      ];
+      const positiveDiffs = diffs.filter(d => d > 0);
+      const damage = positiveDiffs.length > 0 ? Math.max(...positiveDiffs) : 0;
+    
+      boss.hp -= damage;
+    
+      const container = document.getElementById("gameContent");
+      container.innerHTML = `<p>Les troupes infligent ${damage} dégâts au ${boss.name} !</p>`;
+    
+      if (boss.hp <= 0) {
+        container.innerHTML += `<p>💥 ${boss.name} est vaincu !</p>`;
+        // Les troupes sélectionnées survivent et se reposent un tour
+        selectedTroops.forEach(i => {
+          army[i].resting = true;
+        });
+    
+        currentBossIndex++;
+        if (currentBossIndex >= bosses.length) {
+          endGame(true);
+        } else {
+          container.innerHTML += `<button onclick="nextTurn()">Tour suivant</button>`;
+        }
+      } else {
+        container.innerHTML += `<p>Il reste ${boss.hp} PV au boss.</p>`;
+        // Les troupes meurent si le boss survit
+        army = army.filter((_, i) => !selectedTroops.includes(i));
+        selectedTroops = [];
+        if (army.length === 0) {
+          endGame(false);
+        } else {
+          container.innerHTML += `<button onclick="renderBattleSetup()">Envoyer d'autres troupes</button>`;
+        }
       }
     }
-  }
-  
-  function nextTurn() {
-    // Les troupes au repos se réveillent
-    army.forEach(t => {
-      if (t.resting) t.resting = false;
-    });
-    startBattlePhase();
-  }
-  
-  function endGame(victory, msg = "") {
-    document.getElementById("gameBox").style.display = "none";
-    document.getElementById("endGame").style.display = "block";
-    document.getElementById("finalMessage").textContent = victory
-      ? "🏆 Victoire ! Tu as vaincu les 5 boss !"
-      : "💀 Défaite... " + (msg || "ton armée a été anéantie.");
-  }
+    
+    function nextTurn() {
+      // Les troupes au repos se réveillent
+      army.forEach(t => {
+        if (t.resting) t.resting = false;
+      });
+      startBattlePhase();
+    }
+    
+    function endGame(victory, msg = "") {
+      document.getElementById("gameBox").style.display = "none";
+      document.getElementById("endGame").style.display = "block";
+      document.getElementById("finalMessage").textContent = victory
+        ? "🏆 Victoire ! Tu as vaincu les 5 boss !"
+        : "💀 Défaite... " + (msg || "ton armée a été anéantie.");
+    }
   </script>
 </body>
 </html>
