@@ -285,7 +285,13 @@
     boss.hp -= damage;
 
     const container = document.getElementById("gameContent");
+    // TODO: ajouter emoji du type de degats
     container.innerHTML = `<p>Les troupes infligent ${damage} dégâts au ${boss.name} !</p>`;
+
+    // Les troupes au repos passent à 0 (dispo) si elles ont terminé leur cycle de repos
+    army.forEach(t => {
+      if (t.resting > 0) t.resting -= 1;
+    });
 
     if (boss.hp <= 0) {
       container.innerHTML += `<p>💥 ${boss.name} est vaincu !</p>`;
@@ -294,7 +300,7 @@
       if (currentBossIndex >= bosses.length) {
         endGame(true);
       } else {
-        container.innerHTML += `<button onclick="recoverAndNextBoss()">Prochain boss</button>`;
+        container.innerHTML += `<button onclick="startBattlePhase()">Prochain boss</button>`;
       }
     } else {
       container.innerHTML += `<p>Il reste ${boss.hp} PV au boss.</p>`;
@@ -306,14 +312,6 @@
         container.innerHTML += `<button onclick="renderBattleSetup()">Envoyer d'autres troupes</button>`;
       }
     }
-  }
-
-  function recoverAndNextBoss() {
-    // Les troupes au repos passent à 0 (dispo) si elles ont terminé leur cycle de repos
-    army.forEach(t => {
-      if (t.resting > 0) t.resting -= 1;
-    });
-    startBattlePhase();
   }
 
   function endGame(victory, msg = "") {
