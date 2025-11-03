@@ -17,7 +17,7 @@
       border: solid 1px var(--pico-primary);
       border-radius: var(--border-radius, 0.25rem);
       padding: 0.5rem;
-      margin: 0.7rem;
+      margin: 0.5rem;
       display: inline-block;
       cursor: pointer;
       transition: all 0.2s ease-in-out;
@@ -115,7 +115,7 @@
           <ul>
             <li>⚔️ <strong>Mêlée</strong> — Force au corps-à-corps</li>
             <li>🏹 <strong>Distance</strong> — Puissance à distance</li>
-            <li>💨 <strong>Vitesse</strong> — Rapidité d’action</li>
+            <li>🏃🏻 <strong>Vitesse</strong> — Rapidité d’action</li>
           </ul>
       
           <p>Et un <strong>rang</strong> global selon la somme de ses statistiques :</p>
@@ -156,8 +156,8 @@
           <details>
             <summary>📊 Exemple de calcul</summary>
             <p>
-              Ton armée : ⚔️ 250 | 🏹 300 | 💨 200<br>
-              Boss : ⚔️ 260 | 🏹 280 | 💨 220<br>
+              Ton armée : ⚔️ 250 | 🏹 300 | 🏃🏻 200<br>
+              Boss : ⚔️ 260 | 🏹 280 | 🏃🏻 220<br>
               👉 Tu infliges <strong>20 dégâts</strong> (meilleure différence = 300 - 280)
             </p>
           </details>
@@ -329,7 +329,7 @@
       div.className = "troop";
       div.innerHTML = `
         <strong>${t.name}</strong> <span class="rank rank-${t.rank}">${t.rank}</span><br>
-        ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}<br>
+        ⚔️ ${t.melee} | 🏹 ${t.range} | 🏃🏻 ${t.speed}<br>
         <button onclick="selectTroop(${i})">Choisir</button>`;
       container.appendChild(div);
     });
@@ -355,7 +355,7 @@
     container.innerHTML = `
       <div class="boss"><h3>${boss.name}</h3>
       ❤️ ${boss.hp} PV<br>
-      ⚔️ ${boss.melee} | 🏹 ${boss.range} | 💨 ${boss.speed}</div>
+      ⚔️ ${boss.melee} | 🏹 ${boss.range} | 🏃🏻 ${boss.speed}</div>
       <p>Choisis les troupes à envoyer au combat :</p>
       <p id="sumDisplay" style="font-weight:bold; margin-top:0.5rem;">Aucune troupe sélectionnée.</p>
     `;
@@ -368,7 +368,7 @@
         div.classList.add("resting");
         div.innerHTML = `
           <strong>${t.name}</strong> <span class="rank rank-${t.rank}">${t.rank}</span><br>
-          ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}
+          ⚔️ ${t.melee} | 🏹 ${t.range} | 🏃🏻 ${t.speed}
           <div class="resting-label">Repos (${t.resting})</div>`;
       } else {
         canFight = true;
@@ -376,7 +376,7 @@
         div.onclick = () => toggleSelection(i, div);
         div.innerHTML = `
           <strong>${t.name}</strong> <span class="rank rank-${t.rank}">${t.rank}</span><br>
-          ⚔️ ${t.melee} | 🏹 ${t.range} | 💨 ${t.speed}`;
+          ⚔️ ${t.melee} | 🏹 ${t.range} | 🏃🏻 ${t.speed}`;
       }
       container.appendChild(div);
     });
@@ -418,7 +418,7 @@
       totalRange += t.range;
       totalSpeed += t.speed;
     });
-    display.textContent = `⚔️ ${totalMelee} | 🏹 ${totalRange} | 💨 ${totalSpeed}`;
+    display.textContent = `⚔️ ${totalMelee} | 🏹 ${totalRange} | 🏃🏻 ${totalSpeed}`;
   }
 
   function launchBattle() {
