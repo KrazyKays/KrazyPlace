@@ -126,14 +126,7 @@
       
         <section>
           <h3>⚔️ Phase 2 — Combats</h3>
-          <p>Affronte les boss dans l’ordre suivant :</p>
-          <ol>
-            <li>Roi Démon</li>
-            <li>Hydre des Sables</li>
-            <li>Titan de Fer</li>
-            <li>Dragon des Brumes</li>
-            <li>Dieu Déchu</li>
-          </ol>
+          <p>Affronte les 5 boss</p>
       
           <p>Avant chaque combat :</p>
           <ul>
@@ -229,8 +222,7 @@
     };
   }
 
-  const troopNames = ["Guerrier", "Archer", "Lancier", "Mage", "Assassin", "Cavalier", "Golem", "Voleur", "Sorcier", "Barbare", "Moine", "Berserker"];
-  const bossesNames = ["Roi Démon", "Hydre des Sables", "Titan de Fer", "Dragon des Brumes", "Dieu Déchu"];
+  const bossesNames = ["Titan de Fer", "Hydre des Sables", "Roi Démon", "Dragon des Brumes", "Dieu Déchu"];
 
   let rng, army = [], availableChoices = [], currentBossIndex = 0, bosses = [];
   let phase = "recruit", selectedTroops = [];
@@ -249,13 +241,35 @@
   function randomStat() { return Math.floor(20 + rng() * 80); }
 
   function generateTroop() {
+    // Groupes de noms selon la stat dominante
+    const meleeNames = ["Guerrier", "Barbare", "Berserker", "Moine"];
+    const rangeNames = ["Archer", "Mage", "Lancier", "Invocateur"];
+    const speedNames = ["Assassin", "Voleur", "Cavalier", "Éclaireur"];
+  
+    const stats = ["melee", "range", "speed"];
+    const peakStat = stats[Math.floor(rng() * stats.length)];
+  
+    // Valeurs : un pic et deux stats moyennes
+    const peak = Math.floor(70 + rng() * 40); // entre 70 et 110
+    const base1 = Math.floor(20 + rng() * 60);
+    const base2 = Math.floor(20 + rng() * 60);
+  
+    // Génération des valeurs
     const troop = {
-      name: troopNames[Math.floor(rng() * troopNames.length)],
-      melee: randomStat(),
-      range: randomStat(),
-      speed: randomStat(),
-      resting: 0 // 0 = dispo, 1 = repos (inactif pendant 1 combat)
+      melee: peakStat === "melee" ? peak : (rng() < 0.5 ? base1 : base2),
+      range: peakStat === "range" ? peak : (rng() < 0.5 ? base1 : base2),
+      speed: peakStat === "speed" ? peak : (rng() < 0.5 ? base1 : base2),
+      resting: 0
     };
+  
+    // Nom cohérent selon la stat dominante
+    if (peakStat === "melee")
+      troop.name = meleeNames[Math.floor(rng() * meleeNames.length)];
+    else if (peakStat === "range")
+      troop.name = rangeNames[Math.floor(rng() * rangeNames.length)];
+    else
+      troop.name = speedNames[Math.floor(rng() * speedNames.length)];
+  
     troop.rank = getRank(troop);
     return troop;
   }
