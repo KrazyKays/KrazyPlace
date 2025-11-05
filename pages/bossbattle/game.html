@@ -455,7 +455,7 @@
       if (currentBossIndex >= bosses.length) {
         endGame(true);
       } else {
-        setTimeout(() => startBattlePhase(), 1000);
+        startBattlePhase();
       }
     } else {
       container.innerHTML += `<p>Il reste ${boss.hp} PV au boss.</p>`;
@@ -464,7 +464,7 @@
       if (army.length === 0) {
         endGame(false);
       } else {
-        setTimeout(() => renderBattleSetup(), 1000);
+        renderBattleSetup();
       }
     }
   }
