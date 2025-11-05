@@ -455,7 +455,7 @@
       if (currentBossIndex >= bosses.length) {
         endGame(true);
       } else {
-        container.innerHTML += `<button onclick="startBattlePhase()">Prochain boss</button>`;
+        setTimeout(() => startBattlePhase(), 1000);
       }
     } else {
       container.innerHTML += `<p>Il reste ${boss.hp} PV au boss.</p>`;
@@ -464,7 +464,7 @@
       if (army.length === 0) {
         endGame(false);
       } else {
-        container.innerHTML += `<button onclick="renderBattleSetup()">Envoyer d'autres troupes</button>`;
+        setTimeout(() => renderBattleSetup(), 1000);
       }
     }
   }
