@@ -94,103 +94,37 @@
       </div>
       
       <article id="rulesArticle" class="container container-narrow" style="display:none; margin-top: 1rem;">
-        <h2>📘 Règles du jeu — KrazyPlace: Boss Battle</h2>
+        <h2>📘 Règles — KrazyPlace: Boss Battle</h2>
       
-        <section>
-          <h3>🎯 Objectif</h3>
-          <p>Forme une armée de <strong>10 troupes</strong> et terrasse les <strong>5 boss</strong> successifs.
-          Si ton armée est anéantie avant la fin, la partie est perdue.</p>
-        </section>
+        <p>🎯 <strong>But</strong> : recrute 10 troupes et bats les 5 boss sans que ton armée soit détruite.</p>
       
-        <section>
-          <h3>🏗️ Phase 1 — Recrutement</h3>
-          <ul>
-            <li>Tu commences la partie sans troupe.</li>
-            <li>À chaque tour, <strong>3 troupes aléatoires</strong> te sont proposées.</li>
-            <li>Choisis <strong>une troupe</strong> pour rejoindre ton armée.</li>
-            <li>Continue jusqu’à avoir <strong>10 troupes</strong> au total.</li>
-          </ul>
+        <h3>🏗️ Recrutement</h3>
+        <ul>
+          <li>3 troupes aléatoires → choisis-en 1 à chaque tour (jusqu’à 10).</li>
+          <li>Stats : ⚔️ Mêlée, 🏹 Distance, 🏃🏻 Vitesse.</li>
+          <li>Rang global : F à S selon la somme des stats.</li>
+        </ul>
       
-          <p>Chaque troupe possède 3 statistiques :</p>
-          <ul>
-            <li>⚔️ <strong>Mêlée</strong> — Force au corps-à-corps</li>
-            <li>🏹 <strong>Distance</strong> — Puissance à distance</li>
-            <li>🏃🏻 <strong>Vitesse</strong> — Rapidité d’action</li>
-          </ul>
+        <h3>⚔️ Combats</h3>
+        <ul>
+          <li>Choisis les troupes à envoyer contre chaque boss.</li>
+          <li>Les troupes fatiguées (repos 1 combat) ne peuvent pas combattre.</li>
+          <li>Les dégâts = meilleure différence positive entre tes stats et celles du boss.</li>
+        </ul>
       
-          <p>Et un <strong>rang</strong> global selon la somme de ses statistiques :</p>
-          <table role="grid">
-            <thead>
-              <tr><th>Rang</th><th>Niveau global</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>S</td><td>Exceptionnel</td></tr>
-              <tr><td>A</td><td>Excellent</td></tr>
-              <tr><td>B</td><td>Bon</td></tr>
-              <tr><td>C</td><td>Moyen</td></tr>
-              <tr><td>D</td><td>Faible</td></tr>
-              <tr><td>F</td><td>Médiocre</td></tr>
-            </tbody>
-          </table>
-        </section>
+        <h3>🏁 Fin</h3>
+        <ul>
+          <li>✅ Victoire : 5 boss vaincus.</li>
+          <li>💀 Défaite : plus de troupes actives.</li>
+        </ul>
       
-        <section>
-          <h3>⚔️ Phase 2 — Combats</h3>
-          <p>Affronte les 5 boss</p>
+        <h3>🎲 Modes</h3>
+        <ul>
+          <li>🌞 Partie du jour — même défi pour tous.</li>
+          <li>🎲 Partie aléatoire — nouvelle aventure à chaque fois.</li>
+        </ul>
       
-          <p>Avant chaque combat :</p>
-          <ul>
-            <li>Choisis les troupes à envoyer au combat (une ou plusieurs).</li>
-            <li>Les troupes au repos ne peuvent pas participer.</li>
-          </ul>
-        </section>
-      
-        <section>
-          <h3>💥 Déroulement d’un combat</h3>
-          <p>Les statistiques totales de tes troupes sont comparées à celles du boss.</p>
-          <ul>
-            <li>Pour chaque catégorie (mêlée, distance, vitesse), si ton total dépasse celui du boss, tu infliges des dégâts.</li>
-            <li>Les dégâts infligés sont égaux à la <strong>meilleure différence positive</strong> entre tes statistiques et celles du boss.</li>
-          </ul>
-      
-          <details>
-            <summary>📊 Exemple de calcul</summary>
-            <p>
-              Ton armée : ⚔️ 250 | 🏹 300 | 🏃🏻 200<br>
-              Boss : ⚔️ 260 | 🏹 280 | 🏃🏻 220<br>
-              👉 Tu infliges <strong>20 dégâts</strong> (meilleure différence = 300 - 280)
-            </p>
-          </details>
-        </section>
-      
-        <section>
-          <h3>😴 Gestion du repos</h3>
-          <ul>
-            <li>Les troupes ayant combattu se reposent pendant <strong>1 combat</strong> après leur victoire.</li>
-            <li>Une troupe en repos ne peut <strong>pas</strong> être sélectionnée.</li>
-            <li>Après chaque tour, les troupes au repos redeviennent disponibles.</li>
-          </ul>
-        </section>
-      
-        <section>
-          <h3>🏁 Fin de partie</h3>
-          <ul>
-            <li>✅ <strong>Victoire</strong> : tu bats les 5 boss.</li>
-            <li>💀 <strong>Défaite</strong> : ton armée est anéantie ou toutes tes troupes sont au repos.</li>
-          </ul>
-        </section>
-      
-        <section>
-          <h3>🎲 Modes de jeu</h3>
-          <ul>
-            <li><strong>Partie du jour 🌞</strong> : même défi pour tous les joueurs du jour.</li>
-            <li><strong>Partie aléatoire 🎲</strong> : aventure unique à chaque lancement.</li>
-          </ul>
-        </section>
-      
-        <blockquote>
-          💡 <strong>Astuce</strong> : une bonne gestion de ton équipe et des temps de repos est la clé de la victoire !
-        </blockquote>
+        <blockquote>💡 Gère bien le repos de tes troupes pour gagner !</blockquote>
       </article>
 
       <div style="margin: 1rem 0;">
