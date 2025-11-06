@@ -229,7 +229,7 @@
       const weaknessOptions = ["melee", "range", "speed"];
       const weakness = weaknessOptions[Math.floor(rng() * weaknessOptions.length)];
       // La base de hp augmente entre chaque boss boss
-      const baseMin = 125 + index * 25;
+      const baseMin = 125 + currentBossIndex * 25;
       const hp = Math.floor(baseMin + rng() * 300);
       const boss = {
         name,
