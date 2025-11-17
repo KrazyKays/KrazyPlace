@@ -41,7 +41,6 @@
       <div style="margin: 1rem 0;" class="controls">
         <button id="dailyGameBtn">Partie du jour 🌞</button>
         <button id="randomGameBtn">Partie aléatoire 🎲</button>
-        <button id="restartBtn" style="display:none;">🔁 Recommencer</button>
       </div>
 
       <div class="daily-box" id="gameBox" style="display:none;">
@@ -171,7 +170,6 @@
   document.getElementById('castBtn').onclick = () => castSpell();
   document.getElementById('clearSpellBtn').onclick = () => { spell = []; renderSpellSlots(); };
   document.getElementById('reorderBtn').onclick = () => reorderSpell();
-  document.getElementById('restartBtn').onclick = () => startGame(seedGlobal);
 
   // --- Core functions ---
   function startGame(seed) {
@@ -185,7 +183,6 @@
     monsters = [];
     document.getElementById('gameBox').style.display = 'block';
     document.getElementById('endGame').style.display = 'none';
-    document.getElementById('restartBtn').style.display = 'inline-block';
     log('Nouvelle partie — seed: ' + seed);
     generateChoices();
     spawnWave();
