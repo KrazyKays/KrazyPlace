@@ -12,7 +12,7 @@
     .container-narrow { max-width: 1000px; margin: auto; }
     .daily-box { background: var(--surface-2); border-radius: var(--border-radius); padding: 1.5rem; margin-top: 1rem; }
     .panel { display:flex; gap:1rem; flex-wrap:wrap; justify-content:center; }
-    .fragment, .monster, .slot { background: var(--surface-3); border-radius: var(--border-radius, 0.25rem); padding:0.6rem; margin:0.3rem; width:220px; }
+    .fragment, .monster, .slot { background: var(--surface-3); border-radius: var(--border-radius, 0.25rem); padding:0.6rem; margin:0.3rem; width:220px; border: 1px solid var(--pico-primary); }
     .fragment:hover, .monster:hover { transform: scale(1.03); cursor:pointer; }
     .slot { min-height:56px; display:flex; align-items:center; justify-content:center; flex-direction:column; }
     .monster.dead { opacity:0.4; filter:grayscale(0.6); }
@@ -36,8 +36,7 @@
 
 <main class="container container-narrow">
 <section class="hero">
-  <h1>Spellcraft — Construis tes sorts</h1>
-  <p>Choisis 3 fragments (1 parmi 3, trois fois). Pendant le combat, tu peux activer ou désactiver tes fragments (max 3 actifs), puis lancer ton sort.</p>
+  <h1>Spellcraft</h1>
 
   <div style="margin: 1rem 0;" class="controls">
     <button id="dailyGameBtn">Partie du jour 🌞</button>
@@ -123,7 +122,6 @@ const FRAGMENTS_POOL = [
   { id:'crit', name:'Critique', desc:'Chance de critique', type:'crit', critBonus:0.25 },
   { id:'aoe', name:'Onde', desc:'Dégâts à tous les ennemis', type:'aoe' },
   { id:'pierce', name:'Percée', desc:'Ignore une partie de la défense', type:'pierce', bonus:20 },
-  { id:'heal', name:'Soin', desc:'Effet futur (héros)', type:'heal', base:40 },
   { id:'shard', name:'Éclat', desc:'Petit dégât polyvalent', type:'damage', base:30 },
 ];
 
@@ -419,8 +417,7 @@ function endGame(victory) {
   document.getElementById('endSummary').textContent =
     `Vagues terminées : ${Math.min(waveIndex, wavesConfig.length)} / ${wavesConfig.length}.
      Sorts lancés : ${spellsCast}.
-     Dégâts totaux : ${totalDamage}.
-     Seed : ${seedGlobal}`;
+     Dégâts totaux : ${totalDamage}`;
 
   log("Partie terminée.");
 }
