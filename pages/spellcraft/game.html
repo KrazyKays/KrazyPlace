@@ -14,412 +14,417 @@
     .panel { display:flex; gap:1rem; flex-wrap:wrap; justify-content:center; }
     .fragment, .monster, .slot { background: var(--surface-3); border-radius: var(--border-radius, 0.25rem); padding:0.6rem; margin:0.3rem; width:220px; }
     .fragment:hover, .monster:hover { transform: scale(1.03); cursor:pointer; }
-    .fragment.selected { border:3px solid var(--primary); box-shadow:0 0 8px var(--primary); }
-    .slot { min-height:56px; display:flex; align-items:center; justify-content:center; }
+    .slot { min-height:56px; display:flex; align-items:center; justify-content:center; flex-direction:column; }
     .monster.dead { opacity:0.4; filter:grayscale(0.6); }
     .controls { display:flex; gap:0.5rem; justify-content:center; flex-wrap:wrap; }
     .stats { text-align:left; }
     .log { max-height:240px; overflow:auto; white-space:pre-wrap; background:var(--surface-1); padding:0.6rem; border-radius:6px; }
     footer { text-align: center; margin-top: 1rem; border-top: 1px solid var(--surface-3); padding-top: 1rem; }
+    .inactive { opacity:0.5; }
   </style>
 </head>
 <body>
-  <header class="container container-narrow">
-    <nav>
-      <ul>
-        <li class="logo"><a href="/krazyplace">KrazyPlace</a></li>
-        <li><a href="#">Spellcraft</a></li>
-      </ul>
-    </nav>
-  </header>
 
-  <main class="container container-narrow">
-    <section class="hero">
-      <h1>Spellcraft — Construis tes sorts</h1>
-      <p>Choisis à plusieurs reprises (parmi 3) des fragments de sorts, assemble-les, réarrange entre chaque vague, et lance le sort pour affronter la vague.</p>
+<header class="container container-narrow">
+  <nav>
+    <ul>
+      <li class="logo"><a href="/krazyplace">KrazyPlace</a></li>
+      <li><a href="#">Spellcraft</a></li>
+    </ul>
+  </nav>
+</header>
 
-      <div style="margin: 1rem 0;" class="controls">
-        <button id="dailyGameBtn">Partie du jour 🌞</button>
-        <button id="randomGameBtn">Partie aléatoire 🎲</button>
+<main class="container container-narrow">
+<section class="hero">
+  <h1>Spellcraft — Construis tes sorts</h1>
+  <p>Choisis 3 fragments (1 parmi 3, trois fois). Pendant le combat, tu peux activer ou désactiver tes fragments (max 3 actifs), puis lancer ton sort.</p>
+
+  <div style="margin: 1rem 0;" class="controls">
+    <button id="dailyGameBtn">Partie du jour 🌞</button>
+    <button id="randomGameBtn">Partie aléatoire 🎲</button>
+  </div>
+
+  <div class="daily-box" id="gameBox" style="display:none;">
+    <h3 id="phaseTitle">Phase de sélection — Choix 1 / 3</h3>
+
+    <div style="display:flex; gap:1rem; flex-wrap:wrap; justify-content:center;">
+      <div style="min-width:260px;">
+        <h4>Fragments proposés</h4>
+        <div id="choices" class="panel"></div>
+        <p style="text-align:center; margin-top:0.4rem;">
+          <small>Clique sur un fragment pour le sélectionner.</small>
+        </p>
       </div>
 
-      <div class="daily-box" id="gameBox" style="display:none;">
-        <h3 id="phaseTitle">Préparation</h3>
-        <div style="display:flex; gap:1rem; flex-wrap:wrap; justify-content:center;">
-          <div style="min-width:260px;">
-            <h4>Fragments proposés</h4>
-            <div id="choices" class="panel"></div>
-            <p style="text-align:center; margin-top:0.4rem;"><small>Clique pour choisir un fragment — tu peux choisir jusqu'à 3 fragments pour composer un sort (tu peux t'arrêter avant).
-            </small></p>
-            <div style="margin-top:0.5rem; text-align:center;">
-              <button id="addFragmentBtn">✚ Ajouter un fragment (max 3)</button>
-              <button id="shuffleChoicesBtn">🔀 Renouveler les 3 choix</button>
-            </div>
-          </div>
+      <div style="min-width:300px;">
+        <h4>Fragments possédés</h4>
+        <div id="spellSlots" class="panel"></div>
+        <p style="text-align:center;">
+          <small>En combat : maximum 3 fragments peuvent être actifs.</small>
+        </p>
+      </div>
 
-          <div style="min-width:300px;">
-            <h4>Sort en cours (ordre = gauche → droite)</h4>
-            <div id="spellSlots" class="panel"></div>
-            <div style="margin-top:0.4rem; text-align:center;" class="controls">
-              <button id="castBtn">🔥 Lancer le sort</button>
-              <button id="clearSpellBtn">🗑️ Effacer</button>
-              <button id="reorderBtn">↔️ Réarranger</button>
-            </div>
-            <p style="font-size:0.9rem; margin-top:0.4rem;">Objectif : terminer toutes les vagues en lançant le moins de sorts possible et en infligeant le plus de dégâts (overkill compté).</p>
-          </div>
-
-          <div style="min-width:320px;">
-            <h4>Vague actuelle</h4>
-            <div id="waveInfo"></div>
-            <div id="monsters" class="panel" style="margin-top:0.6rem;"></div>
-            <div style="margin-top:0.6rem;">
-              <p class="stats"><strong>Statistiques :</strong></p>
-              <p id="statSpells">Sorts lancés : 0</p>
-              <p id="statDamage">Dégâts totaux (incl. overkill) : 0</p>
-            </div>
-          </div>
-        </div>
-
-        <hr>
-        <div style="display:flex; gap:1rem; align-items:flex-start;">
-          <div style="flex:1;">
-            <h4>Journal</h4>
-            <div id="log" class="log"></div>
-          </div>
-          <div style="width:260px;">
-            <h4>Règles rapides</h4>
-            <ul>
-              <li>Choisis jusqu'à 3 fragments — l'ordre change l'effet.</li>
-              <li>Fragments : Feu, Poison, Marque, Crit, Zone, Percée, Soins...</li>
-              <li>Marque augmente le prochain dégât sur la cible (+% ou +flat).</li>
-              <li>Crit : chance d'appliquer un multiplicateur sur une attaque.</li>
-              <li>Poison/Brûlure : dégât sur la durée appliqué chaque round.</li>
-              <li>Après chaque vague, les fragments sont remélangés et tu peux modifier ton sort.
-              </li>
-            </ul>
-          </div>
+      <div style="min-width:320px;">
+        <h4>Vague actuelle</h4>
+        <div id="waveInfo"></div>
+        <div id="monsters" class="panel" style="margin-top:0.6rem;"></div>
+        <div style="margin-top:0.6rem;">
+          <p class="stats"><strong>Statistiques :</strong></p>
+          <p id="statSpells">Sorts lancés : 0</p>
+          <p id="statDamage">Dégâts totaux (incl. overkill) : 0</p>
         </div>
       </div>
+    </div>
 
-      <div id="endGame" style="display:none; margin-top:2rem;">
-        <h2 id="endTitle">Fin de partie</h2>
-        <p id="endSummary"></p>
+    <div class="controls" style="margin-top:1rem;">
+      <button id="castBtn">🔥 Lancer le sort</button>
+    </div>
+
+    <hr>
+    <div style="display:flex; gap:1rem; align-items:flex-start;">
+      <div style="flex:1;">
+        <h4>Journal</h4>
+        <div id="log" class="log"></div>
       </div>
-    </section>
-  </main>
 
-  <footer><p>© KrazyPlace — Spellcraft</p></footer>
+      <div style="width:260px;">
+        <h4>Règles</h4>
+        <ul>
+          <li>Tu sélectionnes 3 fragments (1 parmi 3, trois fois).</li>
+          <li>En combat, tu peux activer/désactiver librement tes fragments.</li>
+          <li>Tu peux activer au maximum 3 fragments simultanément.</li>
+          <li>Après chaque vague, tu choisis 1 fragment parmi 3 qui s’ajoute à ton inventaire.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
 
-  <script>
-  // PRNG same as original
-  function pseudoRandom(seed) {
-    let s = seed;
-    return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
-  }
+  <div id="endGame" style="display:none; margin-top:2rem;">
+    <h2 id="endTitle">Fin de partie</h2>
+    <p id="endSummary"></p>
+  </div>
+</section>
+</main>
 
-  // --- Game data ---
-  const FRAGMENTS_POOL = [
-    { id: 'fire', name: 'Flamme', desc: 'Dégâts immédiats + brûlure', type:'damage', base: 60, dot: 10 },
-    { id: 'poison', name: 'Poison', desc: 'Dégâts sur la durée', type:'dot', base: 10, duration: 3 },
-    { id: 'mark', name: 'Marque', desc: 'Augmente le prochain dégât sur la cible', type:'mark', addFlat:30 },
-    { id: 'crit', name: 'Frappe critique', desc: 'Augmente la probabilité de critique', type:'crit', critBonus:0.25 },
-    { id: 'aoe', name: 'Onde', desc: 'Attaque de zone (tous les ennemis)', type:'aoe' },
-    { id: 'pierce', name: 'Percée', desc: 'Ignorer une partie de la défense (bonus contre armure fictive)', type:'pierce', bonus: 20 },
-    { id: 'heal', name: 'Soin', desc: 'Soigne légèrement (utile si tu ajoutes un mécanisme de héros)', type:'heal', base:40 },
-    { id: 'shard', name: 'Fragment brut', desc: 'Petit dégât polyvalent', type:'damage', base:30 },
-  ];
+<footer><p>© KrazyPlace — Spellcraft</p></footer>
 
-  const wavesConfig = [
-    { n:3, baseHp:80 },
-    { n:3, baseHp:120 },
-    { n:4, baseHp:160 },
-    { n:4, baseHp:230 },
-    { n:5, baseHp:330 }
-  ];
+<script>
+/* ---- PRNG ---- */
+function pseudoRandom(seed) {
+  let s = seed;
+  return () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+}
 
-  // --- State ---
-  let rng, seedGlobal;
-  let choices = [];
-  let spell = []; // ordered array of fragment objects
-  let waveIndex = 0;
-  let monsters = [];
-  let spellsCast = 0;
-  let totalDamage = 0;
+/* ---- Fragments ---- */
+const FRAGMENTS_POOL = [
+  { id:'fire', name:'Flamme', desc:'Dégâts + brûlure', type:'damage', base:60, dot:10 },
+  { id:'poison', name:'Poison', desc:'Dégâts sur la durée', type:'dot', base:10, duration:3 },
+  { id:'mark', name:'Marque', desc:'Amplifie le prochain dégât', type:'mark', addFlat:30 },
+  { id:'crit', name:'Critique', desc:'Chance de critique', type:'crit', critBonus:0.25 },
+  { id:'aoe', name:'Onde', desc:'Dégâts à tous les ennemis', type:'aoe' },
+  { id:'pierce', name:'Percée', desc:'Ignore une partie de la défense', type:'pierce', bonus:20 },
+  { id:'heal', name:'Soin', desc:'Effet futur (héros)', type:'heal', base:40 },
+  { id:'shard', name:'Éclat', desc:'Petit dégât polyvalent', type:'damage', base:30 },
+];
 
-  // DOM
-  const choicesDiv = document.getElementById('choices');
-  const slotsDiv = document.getElementById('spellSlots');
-  const waveInfo = document.getElementById('waveInfo');
-  const monstersDiv = document.getElementById('monsters');
-  const logDiv = document.getElementById('log');
-  const statSpells = document.getElementById('statSpells');
-  const statDamage = document.getElementById('statDamage');
+/* ---- Vagues ---- */
+const wavesConfig = [
+  { n:3, baseHp:80 },
+  { n:3, baseHp:120 },
+  { n:4, baseHp:160 },
+  { n:4, baseHp:230 },
+  { n:5, baseHp:330 }
+];
 
-  // Buttons
-  document.getElementById('dailyGameBtn').onclick = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const seed = today.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
-    startGame(seed);
-  };
-  document.getElementById('randomGameBtn').onclick = () => {
-    const seed = Math.floor(Math.random() * 2147483647);
-    startGame(seed);
-  };
-  document.getElementById('addFragmentBtn').onclick = () => addChosenFragment();
-  document.getElementById('shuffleChoicesBtn').onclick = () => generateChoices();
-  document.getElementById('castBtn').onclick = () => castSpell();
-  document.getElementById('clearSpellBtn').onclick = () => { spell = []; renderSpellSlots(); };
-  document.getElementById('reorderBtn').onclick = () => reorderSpell();
+/* ---- State ---- */
+let rng, seedGlobal;
+let choices = [];
+let fragments = [];   // inventaire complet
+let waveIndex = 0;
+let monsters = [];
+let spellsCast = 0;
+let totalDamage = 0;
 
-  // --- Core functions ---
-  function startGame(seed) {
-    seedGlobal = seed;
-    rng = pseudoRandom(seed);
-    choices = [];
-    spell = [];
-    waveIndex = 0;
-    spellsCast = 0;
-    totalDamage = 0;
-    monsters = [];
-    document.getElementById('gameBox').style.display = 'block';
-    document.getElementById('endGame').style.display = 'none';
-    log('Nouvelle partie — seed: ' + seed);
+let selectionStep = 0; // 0→1→2→3 initiale, puis 999 = combat mode
+
+/* ---- DOM ---- */
+const choicesDiv = document.getElementById('choices');
+const slotsDiv = document.getElementById('spellSlots');
+const waveInfo = document.getElementById('waveInfo');
+const monstersDiv = document.getElementById('monsters');
+const logDiv = document.getElementById('log');
+const statSpells = document.getElementById('statSpells');
+const statDamage = document.getElementById('statDamage');
+const phaseTitle = document.getElementById('phaseTitle');
+
+/* ---- Buttons ---- */
+document.getElementById('dailyGameBtn').onclick = () => {
+  const today = new Date().toISOString().split('T')[0];
+  const seed = today.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  startGame(seed);
+};
+document.getElementById('randomGameBtn').onclick = () => {
+  const seed = Math.floor(Math.random() * 2147483647);
+  startGame(seed);
+};
+document.getElementById('castBtn').onclick = () => castSpell();
+
+/* ---- Core ---- */
+function startGame(seed) {
+  seedGlobal = seed;
+  rng = pseudoRandom(seed);
+
+  choices = [];
+  fragments = [];
+  waveIndex = 0;
+  spellsCast = 0;
+  totalDamage = 0;
+  monsters = [];
+  selectionStep = 0;
+
+  document.getElementById('gameBox').style.display = 'block';
+  document.getElementById('endGame').style.display = 'none';
+
+  log('Nouvelle partie — seed : ' + seed);
+
+  generateChoices();
+  spawnWave();
+  updateStats();
+  updatePhaseTitle();
+}
+
+function updatePhaseTitle() {
+  if (selectionStep < 3)
+    phaseTitle.textContent = `Phase de sélection — Choix ${selectionStep + 1} / 3`;
+  else
+    phaseTitle.textContent = `Combat — Active jusqu’à 3 fragments`;
+}
+
+function log(text) {
+  const time = new Date().toLocaleTimeString();
+  logDiv.textContent = `[${time}] ${text}\n` + logDiv.textContent;
+}
+
+function sampleFromPool() {
+  const idx = Math.floor(rng() * FRAGMENTS_POOL.length);
+  const base = JSON.parse(JSON.stringify(FRAGMENTS_POOL[idx]));
+  base.active = false;
+  return base;
+}
+
+function generateChoices() {
+  choices = [sampleFromPool(), sampleFromPool(), sampleFromPool()];
+  renderChoices();
+}
+
+function renderChoices() {
+  choicesDiv.innerHTML = '';
+  choices.forEach((c,i)=>{
+    const d = document.createElement('div');
+    d.className = 'fragment';
+    d.innerHTML = `<strong>${c.name}</strong><br><small>${c.desc}</small>`;
+    d.onclick = () => pickFragment(i);
+    choicesDiv.appendChild(d);
+  });
+}
+
+function pickFragment(i) {
+  const frag = choices[i];
+  fragments.push(frag);
+  log(`Tu as obtenu : ${frag.name}`);
+
+  if (selectionStep < 2) {
+    selectionStep++;
     generateChoices();
-    spawnWave();
-    updateStats();
-  }
-
-  function log(text) {
-    const time = new Date().toLocaleTimeString();
-    logDiv.textContent = `[${time}] ${text}\n` + logDiv.textContent;
-  }
-
-  function sampleFromPool() {
-    // return a deep-ish copy of a fragment with some randomness to scale
-    const idx = Math.floor(rng() * FRAGMENTS_POOL.length);
-    const base = FRAGMENTS_POOL[idx];
-    return JSON.parse(JSON.stringify(base));
-  }
-
-  function generateChoices() {
-    choices = [sampleFromPool(), sampleFromPool(), sampleFromPool()];
-    renderChoices();
-  }
-
-  function renderChoices() {
+  } else {
+    selectionStep = 999; // combat mode
+    choices = [];
     choicesDiv.innerHTML = '';
-    choices.forEach((c, i) => {
-      const d = document.createElement('div');
-      d.className = 'fragment';
-      d.innerHTML = `<strong>${c.name}</strong><br><small>${c.desc}</small><br><div style="margin-top:6px;text-align:center;"><button data-i='${i}'>Choisir</button></div>`;
-      d.querySelector('button').onclick = (e) => { e.stopPropagation(); chooseFragment(i); };
-      d.onclick = () => chooseFragment(i);
-      choicesDiv.appendChild(d);
+  }
+
+  renderFragments();
+  updatePhaseTitle();
+}
+
+function renderFragments() {
+  slotsDiv.innerHTML = '';
+  fragments.forEach((f,i)=>{
+    const d = document.createElement('div');
+    d.className = 'slot ' + (f.active ? '' : 'inactive');
+
+    d.innerHTML = `
+      <strong>${f.name}</strong><br>
+      <small>${f.desc}</small><br>
+      <button data-i='${i}' class="toggleBtn">${f.active ? 'Désactiver' : 'Activer'}</button>
+    `;
+
+    d.querySelector('.toggleBtn').onclick = (e)=>{
+      e.stopPropagation();
+      toggleFragment(i);
+    };
+
+    slotsDiv.appendChild(d);
+  });
+}
+
+function toggleFragment(i) {
+  const activeCount = fragments.filter(f=>f.active).length;
+  if (!fragments[i].active && activeCount >= 3) {
+    alert("Tu ne peux activer que 3 fragments maximum !");
+    return;
+  }
+  fragments[i].active = !fragments[i].active;
+  renderFragments();
+}
+
+/* ---- Combat ---- */
+
+function spawnWave() {
+  if (waveIndex >= wavesConfig.length) return endGame(true);
+
+  const cfg = wavesConfig[waveIndex];
+  monsters = [];
+
+  for (let i=0;i<cfg.n;i++){
+    const hp = Math.floor(cfg.baseHp + rng() * cfg.baseHp * 0.5);
+    monsters.push({ id:i, hp, maxHp:hp, dots:[], marks:0 });
+  }
+
+  renderWave();
+  log(`Vague ${waveIndex+1} : ${monsters.length} monstres.`);
+}
+
+function renderWave() {
+  waveInfo.innerHTML = `<strong>Vague ${waveIndex+1} / ${wavesConfig.length}</strong>`;
+  monstersDiv.innerHTML = '';
+
+  monsters.forEach((m,i)=>{
+    const d = document.createElement('div');
+    d.className = 'monster' + (m.hp<=0 ? ' dead' : '');
+    d.innerHTML = `<strong>Monstre #${i+1}</strong><br>HP: ${m.hp}/${m.maxHp}`;
+    monstersDiv.appendChild(d);
+  });
+}
+
+function pickTarget() {
+  const alive = monsters.filter(m=>m.hp>0);
+  if (alive.length===0) return null;
+  alive.sort((a,b)=>a.hp-b.hp);
+  return alive[0];
+}
+
+function applyDOTs() {
+  let dotDamage = 0;
+  monsters.forEach(m=>{
+    if (m.hp<=0) return;
+    m.dots = m.dots.filter(d=>{
+      m.hp -= d.amount;
+      dotDamage += d.amount;
+      d.remaining--;
+      return d.remaining > 0;
     });
-  }
+  });
 
-  function chooseFragment(i) {
-    if (spell.length >= 3) { alert('Tu peux mettre au maximum 3 fragments dans un sort.'); return; }
-    const frag = choices[i];
-    spell.push(frag);
-    log(`Tu as ajouté «${frag.name}» au sort.`);
-    // refresh choices: replace chosen index with a new one
-    choices[i] = sampleFromPool();
-    renderChoices();
-    renderSpellSlots();
-  }
-
-  function addChosenFragment() {
-    // default: add first available choice
-    if (choices.length === 0) return;
-    chooseFragment(0);
-  }
-
-  function renderSpellSlots() {
-    slotsDiv.innerHTML = '';
-    for (let i=0;i<3;i++){
-      const s = document.createElement('div');
-      s.className = 'slot';
-      if (spell[i]) {
-        s.innerHTML = `<div style="text-align:center;"><strong>${spell[i].name}</strong><br><small>${spell[i].desc}</small><br><button data-i='${i}'>✖</button></div>`;
-        s.querySelector('button').onclick = (e)=>{ e.stopPropagation(); removeFragment(i); };
-      } else {
-        s.innerHTML = `<em>vide</em>`;
-      }
-      slotsDiv.appendChild(s);
-    }
-  }
-
-  function removeFragment(i) { spell.splice(i,1); renderSpellSlots(); log('Fragment retiré.'); }
-
-  function reorderSpell() {
-    if (spell.length < 2) return alert('Rien à réarranger.');
-    // simple: reverse order for now (user can later request drag&drop)
-    spell.reverse();
-    renderSpellSlots();
-    log('Ordre du sort inversé (simple réarrangement).');
-  }
-
-  function spawnWave() {
-    if (waveIndex >= wavesConfig.length) { endGame(true); return; }
-    const cfg = wavesConfig[waveIndex];
-    monsters = [];
-    for (let i=0;i<cfg.n;i++){
-      const hp = Math.floor(cfg.baseHp + rng() * cfg.baseHp*0.5);
-      monsters.push({ id:i, hp, maxHp:hp, dots:[], marks:0 });
-    }
+  if (dotDamage>0) {
+    totalDamage += dotDamage;
+    log(`DOT inflige ${dotDamage} dégâts.`);
+    updateStats();
     renderWave();
-    log(`Vague ${waveIndex+1} : ${monsters.length} monstres (HP ≈ ${cfg.baseHp}).`);
   }
+}
 
-  function renderWave() {
-    waveInfo.innerHTML = `<strong>Vague ${waveIndex+1} / ${wavesConfig.length}</strong>`;
-    monstersDiv.innerHTML = '';
-    monsters.forEach((m, i) => {
-      const d = document.createElement('div');
-      d.className = 'monster' + (m.hp<=0?' dead':'');
-      d.innerHTML = `<strong>Monstre #${i+1}</strong><br>HP: ${m.hp} / ${m.maxHp}`;
-      monstersDiv.appendChild(d);
-    });
-  }
+function castSpell() {
+  if (selectionStep < 3) return alert("Tu dois d'abord terminer la sélection des 3 fragments.");
+  
+  const actives = fragments.filter(f=>f.active);
+  if (actives.length === 0) return alert("Active au moins un fragment.");
 
-  function pickTarget() {
-    // pick the alive monster with lowest hp (greedy, to maximize overkill counting tactic)
-    const alive = monsters.filter(m=>m.hp>0);
-    if (alive.length===0) return null;
-    // prefer the one with lowest hp to exploit overkill
-    alive.sort((a,b)=>a.hp-b.hp);
-    return alive[0];
-  }
+  spellsCast++;
 
-  function applyDOTs() {
-    // apply poison/burn each "round" (we consider each cast a round)
-    let dotDamage = 0;
+  let castDamage = 0;
+  let isAoE = false;
+  let critMult = 1;
+
+  const target = pickTarget();
+  if (!target) return log("Aucun ennemi vivant.");
+
+  actives.forEach(f=>{
+    if (f.type === 'damage') castDamage += f.base;
+    if (f.type === 'dot') target.dots.push({ amount:f.base, remaining:f.duration });
+    if (f.type === 'mark') target.marks += f.addFlat;
+    if (f.type === 'crit') {
+      const chance = f.critBonus + rng()*0.05;
+      if (rng() < chance) critMult = 1.75;
+    }
+    if (f.type === 'aoe') isAoE = true;
+    if (f.type === 'pierce') castDamage += f.bonus;
+  });
+
+  let damageThisCast = 0;
+
+  if (isAoE) {
     monsters.forEach(m=>{
       if (m.hp<=0) return;
-      if (m.dots && m.dots.length>0){
-        m.dots = m.dots.filter(d=>{
-          m.hp -= d.amount;
-          dotDamage += d.amount;
-          d.remaining -= 1;
-          return d.remaining > 0;
-        });
-      }
+      const dmg = Math.floor((castDamage + m.marks) * critMult) + m.marks;
+      m.marks = 0;
+      const before = m.hp;
+      m.hp -= dmg;
+      damageThisCast += before - Math.max(0,m.hp);
     });
-    if (dotDamage>0) {
-      totalDamage += dotDamage; updateStats(); log(`Effets sur la durée infligent ${dotDamage} dégâts.`);
-      renderWave();
-    }
+    log(`Sort AoE : ${damageThisCast} dégâts.`);
+  }
+  else {
+    const dmg = Math.floor((castDamage + target.marks) * critMult) + target.marks;
+    target.marks = 0;
+    const before = target.hp;
+    target.hp -= dmg;
+    damageThisCast = before - Math.max(0,target.hp);
+    log(`Sort : ${damageThisCast} dégâts à un ennemi.`);
   }
 
-  function castSpell() {
-    if (spell.length===0) return alert('Compose d\'abord un sort (jusqu\'à 3 fragments).');
-    const target = pickTarget();
-    if (!target) { log('Aucun ennemi vivant.'); return; }
-    spellsCast += 1;
-    let castDamage = 0;
-    let isAoE = false;
-    let critMult = 1;
-    let markBonus = 0;
-    // iterate fragments in order
-    spell.forEach(f=>{
-      if (f.type === 'damage') {
-        const dmg = f.base;
-        castDamage += dmg;
-      } else if (f.type === 'dot') {
-        // apply DOT to target
-        target.dots.push({ amount: f.base || 10, remaining: f.duration || 3 });
-      } else if (f.type === 'mark') {
-        // add flat bonus for next damage on target
-        target.marks += f.addFlat || 0;
-      } else if (f.type === 'crit') {
-        // simple model: add chance to multiply final damage
-        const chance = (f.critBonus || 0.15) + (rng()*0.05);
-        if (rng() < chance) { critMult = 1.75; }
-      } else if (f.type === 'aoe') {
-        isAoE = true;
-      } else if (f.type === 'pierce') {
-        // pierce as bonus damage
-        castDamage += (f.bonus || 20);
-      } else if (f.type === 'heal') {
-        // not used on monsters, could heal player in future
-      }
-    });
+  totalDamage += damageThisCast;
+  applyDOTs();
+  renderWave();
+  updateStats();
 
-    // apply mark bonus and crit
-    // if AoE: damage applied to all alive monsters
-    let damageThisCast = 0;
-    if (isAoE) {
-      monsters.forEach(m=>{
-        if (m.hp<=0) return;
-        let applied = Math.floor((castDamage + (m.marks || 0)) * critMult);
-        // mark applies per target then consumed
-        applied += (m.marks || 0);
-        // consume marks
-        m.marks = 0;
-        // apply damage and count overkill
-        const before = m.hp;
-        m.hp -= applied;
-        const dealt = before - Math.max(0,m.hp);
-        damageThisCast += dealt;
-      });
-      totalDamage += damageThisCast;
-      log(`Sort AoE inflige ${damageThisCast} dégâts au total.`);
-    } else {
-      // single target
-      let applied = Math.floor((castDamage + (target.marks || 0)) * critMult);
-      applied += (target.marks || 0);
-      target.marks = 0;
-      const before = target.hp;
-      target.hp -= applied;
-      const dealt = before - Math.max(0,target.hp);
-      damageThisCast += dealt;
-      totalDamage += damageThisCast;
-      log(`Sort inflige ${damageThisCast} dégâts au Monstre #${target.id+1}.`);
-    }
+  monsters.forEach((m,i)=>{ if (m.hp<=0) log(`Monstre #${i+1} vaincu !`); });
 
-    // After cast, apply immediate DOT ticks (we treat DOT tick once per cast as "round")
-    applyDOTs();
+  const alive = monsters.filter(m=>m.hp>0);
+  if (alive.length === 0) {
+    log(`Vague ${waveIndex+1} éliminée.`);
+    waveIndex++;
 
-    // Remove dead monsters and advance if wave cleared
-    renderWave();
-    updateStats();
-    // clear spell for next time (player can recompose between waves) — but we keep it so they can tweak
-    // reduce durations handled in applyDOTs
+    if (waveIndex >= wavesConfig.length) return endGame(true);
 
-    // If any monster died this cast, log
-    monsters.forEach((m,i)=>{ if (m.hp<=0) log(`Monstre #${i+1} est vaincu !`); });
+    selectionStep = 3; // mode "choix 1 fragment"
+    phaseTitle.textContent = "Choisis 1 fragment bonus parmi 3";
 
-    // Check if wave cleared
-    const alive = monsters.filter(m=>m.hp>0);
-    if (alive.length === 0) {
-      log(`Vague ${waveIndex+1} éliminée en ${spellsCast} sorts jusqu\'à présent.`);
-      waveIndex += 1;
-      // reshuffle choices and allow recompose
-      generateChoices();
-      if (waveIndex >= wavesConfig.length) { endGame(true); return; }
-      // spawn next wave
-      spawnWave();
-    }
-
-    updateStats();
+    generateChoices();
+    spawnWave();
   }
+}
 
-  function updateStats() {
-    statSpells.textContent = `Sorts lancés : ${spellsCast}`;
-    statDamage.textContent = `Dégâts totaux (incl. overkill) : ${totalDamage}`;
-  }
+function updateStats() {
+  statSpells.textContent = `Sorts lancés : ${spellsCast}`;
+  statDamage.textContent = `Dégâts totaux : ${totalDamage}`;
+}
 
-  function endGame(victory) {
-    document.getElementById('gameBox').style.display = 'none';
-    document.getElementById('endGame').style.display = 'block';
-    document.getElementById('endTitle').textContent = victory ? '🏆 Victoire !' : '💀 Défaite';
-    document.getElementById('endSummary').textContent = `Résultat : ${victory ? 'Victoire' : 'Défaite'}. Vagues terminées : ${Math.min(waveIndex, wavesConfig.length)} / ${wavesConfig.length}. Sorts lancés : ${spellsCast}. Dégâts totaux : ${totalDamage} (overkill inclus). Seed: ${seedGlobal}`;
-    log('Partie terminée.');
-  }
+function endGame(victory) {
+  document.getElementById('gameBox').style.display = 'none';
+  document.getElementById('endGame').style.display = 'block';
 
-  // initial render placeholders
-  renderChoices(); renderSpellSlots();
-  </script>
+  document.getElementById('endTitle').textContent =
+    victory ? '🏆 Victoire !' : '💀 Défaite';
+
+  document.getElementById('endSummary').textContent =
+    `Vagues terminées : ${Math.min(waveIndex, wavesConfig.length)} / ${wavesConfig.length}.
+     Sorts lancés : ${spellsCast}.
+     Dégâts totaux : ${totalDamage}.
+     Seed : ${seedGlobal}`;
+
+  log("Partie terminée.");
+}
+</script>
+
 </body>
 </html>
