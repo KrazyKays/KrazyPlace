@@ -117,13 +117,14 @@ function pseudoRandom(seed) {
 
 /* ---- Fragments ---- */
 const FRAGMENTS_POOL = [
-  { id:'fire', name:'Flamme', desc:'Dégâts + brûlure', type:'damage', base:60, dot:10 },
-  { id:'poison', name:'Poison', desc:'Dégâts sur la durée', type:'dot', base:10, duration:3 },
+  { id:'fire', name:'Flamme', desc:'Dégâts + brûlure (3 tours, non cumulable)', type:'fire', base:60, burn:15, burnDuration:3 },
+  { id:'poison', name:'Poison', desc:'DOT cumulable 5 tours', type:'poison', base:6, duration:5 },
+  { id:'lightning', name:'Foudre', desc:'Dégâts + rebond 50%', type:'lightning', base:40, bounce:0.5 },
   { id:'mark', name:'Marque', desc:'Amplifie le prochain dégât', type:'mark', addFlat:30 },
   { id:'crit', name:'Critique', desc:'Chance de critique', type:'crit', critBonus:0.25 },
   { id:'aoe', name:'Onde', desc:'Dégâts à tous les ennemis', type:'aoe' },
   { id:'pierce', name:'Percée', desc:'Ignore une partie de la défense', type:'pierce', bonus:20 },
-  { id:'shard', name:'Éclat', desc:'Petit dégât polyvalent', type:'damage', base:30 },
+  { id:'shard', name:'Éclat', desc:'Petit dégât polyvalent', type:'damage', base:30 }
 ];
 
 /* ---- Vagues ---- */
@@ -195,13 +196,16 @@ function startGame(seed) {
 function updatePhaseTitle() {
   if (selectionStep < 3)
     phaseTitle.textContent = `Phase de sélection — Choix ${selectionStep + 1} / 3`;
+  else if (selectionStep === 3)
+    phaseTitle.textContent = `Choisis 1 fragment bonus parmi 3`;
   else
     phaseTitle.textContent = `Combat — Active jusqu’à 3 fragments`;
 }
 
 function log(text) {
   const time = new Date().toLocaleTimeString();
-  logDiv.textContent = `[${time}] ${text}\n` + logDiv.textContent;
+  logDiv.textContent = `[${time}] ${text}
+` + logDiv.textContent;
 }
 
 function sampleFromPool() {
@@ -235,8 +239,13 @@ function pickFragment(i) {
   if (selectionStep < 2) {
     selectionStep++;
     generateChoices();
-  } else {
+  } else if (selectionStep === 2) {
     selectionStep = 999; // combat mode
+    choices = [];
+    choicesDiv.innerHTML = '';
+  } else if (selectionStep === 3) {
+    // fragment bonus after wave
+    selectionStep = 999;
     choices = [];
     choicesDiv.innerHTML = '';
   }
@@ -286,7 +295,7 @@ function spawnWave() {
 
   for (let i=0;i<cfg.n;i++){
     const hp = Math.floor(cfg.baseHp + rng() * cfg.baseHp * 0.5);
-    monsters.push({ id:i, hp, maxHp:hp, dots:[], marks:0 });
+    monsters.push({ id:i, hp, maxHp:hp, burn:null, poisons:[], marks:0 });
   }
 
   renderWave();
@@ -300,7 +309,9 @@ function renderWave() {
   monsters.forEach((m,i)=>{
     const d = document.createElement('div');
     d.className = 'monster' + (m.hp<=0 ? ' dead' : '');
-    d.innerHTML = `<strong>Monstre #${i+1}</strong><br>HP: ${m.hp}/${m.maxHp}`;
+    d.innerHTML = `<strong>Monstre #${i+1}</strong><br>HP: ${m.hp}/${m.maxHp}` +
+                  (m.burn && m.burn.remaining > 0 ? `<br><small>Brûlure: ${m.burn.damage} x${m.burn.remaining}</small>` : '') +
+                  (m.poisons && m.poisons.length ? `<br><small>Poison: ${m.poisons.length} stacks</small>` : '');
     monstersDiv.appendChild(d);
   });
 }
@@ -312,16 +323,28 @@ function pickTarget() {
   return alive[0];
 }
 
-function applyDOTs() {
+function applyDOTsAll() {
   let dotDamage = 0;
   monsters.forEach(m=>{
     if (m.hp<=0) return;
-    m.dots = m.dots.filter(d=>{
-      m.hp -= d.amount;
-      dotDamage += d.amount;
-      d.remaining--;
-      return d.remaining > 0;
-    });
+    // Brûlure (non cumulable)
+    if (m.burn && m.burn.remaining > 0) {
+      m.hp -= m.burn.damage;
+      dotDamage += m.burn.damage;
+      m.burn.remaining -= 1;
+      if (m.burn.remaining <= 0) m.burn = null;
+    }
+    // Poisons (cumulable)
+    if (m.poisons && m.poisons.length>0) {
+      // apply each stack
+      for (let i = m.poisons.length-1; i>=0; i--) {
+        const p = m.poisons[i];
+        m.hp -= p.damage;
+        dotDamage += p.damage;
+        p.remaining -= 1;
+        if (p.remaining <= 0) m.poisons.splice(i,1);
+      }
+    }
   });
 
   if (dotDamage>0) {
@@ -332,14 +355,18 @@ function applyDOTs() {
   }
 }
 
+function getAliveIndexes(excludeIdx=null) {
+  const arr = [];
+  monsters.forEach((m,i)=>{ if (m.hp>0 && i!==excludeIdx) arr.push(i); });
+  return arr;
+}
+
 function castSpell() {
-  if (selectionStep < 3) return alert("Tu dois d'abord terminer la sélection des 3 fragments.");
-  
+  if (selectionStep < 3 && selectionStep !== 999) return alert("Tu dois d'abord terminer la sélection des 3 fragments.");
   const actives = fragments.filter(f=>f.active);
   if (actives.length === 0) return alert("Active au moins un fragment.");
 
   spellsCast++;
-
   let castDamage = 0;
   let isAoE = false;
   let critMult = 1;
@@ -347,9 +374,11 @@ function castSpell() {
   const target = pickTarget();
   if (!target) return log("Aucun ennemi vivant.");
 
+  // accumulate direct damage and flags
   actives.forEach(f=>{
     if (f.type === 'damage') castDamage += f.base;
-    if (f.type === 'dot') target.dots.push({ amount:f.base, remaining:f.duration });
+    if (f.type === 'fire') castDamage += f.base;
+    if (f.type === 'poison') castDamage += f.base;
     if (f.type === 'mark') target.marks += f.addFlat;
     if (f.type === 'crit') {
       const chance = f.critBonus + rng()*0.05;
@@ -357,32 +386,67 @@ function castSpell() {
     }
     if (f.type === 'aoe') isAoE = true;
     if (f.type === 'pierce') castDamage += f.bonus;
+    if (f.type === 'lightning') castDamage += f.base;
+    if (f.type === 'shard') castDamage += f.base;
   });
 
   let damageThisCast = 0;
 
   if (isAoE) {
-    monsters.forEach(m=>{
+    monsters.forEach((m,i)=>{
       if (m.hp<=0) return;
       const dmg = Math.floor((castDamage + m.marks) * critMult) + m.marks;
       m.marks = 0;
       const before = m.hp;
       m.hp -= dmg;
       damageThisCast += before - Math.max(0,m.hp);
+
+      // Apply special effects per fragment for each enemy hit (fire/poison/lightning handled below for single-target)
     });
     log(`Sort AoE : ${damageThisCast} dégâts.`);
   }
   else {
+    // Single target: apply direct damage
     const dmg = Math.floor((castDamage + target.marks) * critMult) + target.marks;
     target.marks = 0;
     const before = target.hp;
     target.hp -= dmg;
     damageThisCast = before - Math.max(0,target.hp);
     log(`Sort : ${damageThisCast} dégâts à un ennemi.`);
+
+    // Now handle special fragment effects per active fragment
+    actives.forEach(f=>{
+      if (f.type === 'fire') {
+        // apply burn only if not already burning
+        if (!target.burn || target.burn.remaining <= 0) {
+          target.burn = { damage: f.burn, remaining: f.burnDuration };
+          log(`Brûlure appliquée (${f.burn} dmg x${f.burnDuration}) à un ennemi.`);
+        } else {
+          log(`Brûlure non appliquée: l'ennemi a déjà une brûlure active.`);
+        }
+      }
+      if (f.type === 'poison') {
+        // add a poison stack
+        target.poisons.push({ damage: f.base, remaining: f.duration });
+        log(`Poison appliqué (${f.base} dmg x${f.duration}). Stacks: ${target.poisons.length}`);
+      }
+      if (f.type === 'lightning') {
+        // bounce 50% to another random alive enemy (excluding target)
+        const aliveOther = getAliveIndexes(monsters.indexOf(target));
+        if (aliveOther.length > 0) {
+          const idx = Math.floor(rng() * aliveOther.length);
+          const second = monsters[aliveOther[idx]];
+          const bounceDmg = Math.floor(f.base * f.bounce);
+          second.hp -= bounceDmg;
+          damageThisCast += bounceDmg > second.hp + bounceDmg ? second.hp + bounceDmg : bounceDmg; // approximate contribution
+          log(`Foudre rebondit et inflige ${bounceDmg} dégâts à Monstre #${aliveOther[idx]+1}.`);
+        }
+      }
+    });
   }
 
   totalDamage += damageThisCast;
-  applyDOTs();
+  applyDOTsAll();
   renderWave();
   updateStats();
 
@@ -395,7 +459,8 @@ function castSpell() {
 
     if (waveIndex >= wavesConfig.length) return endGame(true);
 
-    selectionStep = 3; // mode "choix 1 fragment"
+    // give player a choice of 1 fragment among 3
+    selectionStep = 3;
     phaseTitle.textContent = "Choisis 1 fragment bonus parmi 3";
 
     generateChoices();
