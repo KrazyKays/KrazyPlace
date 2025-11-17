@@ -118,13 +118,12 @@ function pseudoRandom(seed) {
 /* ---- Fragments ---- */
 const FRAGMENTS_POOL = [
   { id:'fire', name:'Flamme', desc:'Dégâts + brûlure (3 tours, non cumulable)', type:'fire', base:60, burn:15, burnDuration:3 },
-  { id:'poison', name:'Poison', desc:'DOT cumulable 5 tours', type:'poison', base:6, duration:5 },
+  { id:'poison', name:'Poison', desc:'DOT cumulable 5 tours', type:'poison', base:30, duration:5 },
   { id:'lightning', name:'Foudre', desc:'Dégâts + rebond 50%', type:'lightning', base:40, bounce:0.5 },
-  { id:'mark', name:'Marque', desc:'Amplifie le prochain dégât', type:'mark', addFlat:30 },
+  { id:'mark', name:'Marque', desc:'Amplifie le prochain dégât', type:'mark', addFlat:50 },
   { id:'crit', name:'Critique', desc:'Chance de critique', type:'crit', critBonus:0.25 },
   { id:'aoe', name:'Onde', desc:'Dégâts à tous les ennemis', type:'aoe' },
-  { id:'pierce', name:'Percée', desc:'Ignore une partie de la défense', type:'pierce', bonus:20 },
-  { id:'shard', name:'Éclat', desc:'Petit dégât polyvalent', type:'damage', base:30 }
+  { id:'shard', name:'Éclat', desc:'Dégâts basiques', type:'damage', base:70 }
 ];
 
 /* ---- Vagues ---- */
